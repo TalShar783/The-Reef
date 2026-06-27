@@ -12,13 +12,10 @@ PlanetsLib:extend({
     icon_size               = 64,
     starmap_icon            = "__space-age__/graphics/icons/shattered-planet.png",
     starmap_icon_size       = 64,
-    distance                = 13,
-    orientation             = 0.575,
     order                   = "e[the-reef]",
-    -- PlanetsLib requires orbit even for non-satellite locations.
-    -- Parent is the star; distance/orientation mirror the top-level fields.
+    -- PlanetsLib requires distance/orientation inside orbit, not at top level.
     orbit = {
-      parent = { type = "space-location", name = "star" },
+      parent      = { type = "space-location", name = "star" },
       distance    = 13,
       orientation = 0.575,
     },
