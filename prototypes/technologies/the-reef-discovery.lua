@@ -22,8 +22,8 @@ data:extend({
     },
     effects = {
       {
-        type     = "unlock-space-location",
-        location = "the-reef",
+        type           = "unlock-space-location",
+        space_location = "the-reef",
       },
     },
     order = "e[the-reef]",
