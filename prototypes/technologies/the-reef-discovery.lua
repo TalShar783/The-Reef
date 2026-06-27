@@ -8,7 +8,7 @@ data:extend({
     name    = "the-reef-discovery",
     icon    = "__space-age__/graphics/icons/shattered-planet.png",
     icon_size = 64,
-    prerequisites = { "fulgora-visitation" },
+    prerequisites = { "planet-discovery-fulgora" },
     unit = {
       count = 500,
       ingredients = {
