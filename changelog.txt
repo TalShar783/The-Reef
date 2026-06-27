@@ -4,3 +4,6 @@ Date: 2026-06-27
   Changes:
     - Initial mod skeleton: info.json, data.lua, control.lua, settings.lua, locale stubs
     - Added CLAUDE.md with project context and reference docs
+    - Phase 1: The Reef space-location prototype, Fulgora→Reef space-connection
+    - Phase 1: The Reef Discovery technology (requires fulgora-visitation)
+    - Phase 1: Initial asteroid spawn definitions using fulgora_aquilo route table
