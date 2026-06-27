@@ -15,6 +15,13 @@ PlanetsLib:extend({
     distance                = 13,
     orientation             = 0.575,
     order                   = "e[the-reef]",
+    -- PlanetsLib requires orbit even for non-satellite locations.
+    -- Parent is the star; distance/orientation mirror the top-level fields.
+    orbit = {
+      parent = { type = "space-location", name = "star" },
+      distance    = 13,
+      orientation = 0.575,
+    },
     draw_orbit              = true,
     magnitude               = 0.4,
     solar_power_in_space    = 80,
