@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Write(The-Reef/*)"
+      "Write(The-Reef/*)",
+      "Bash(git *)"
     ]
   }
 }
