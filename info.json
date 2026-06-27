@@ -1,0 +1,14 @@
+{
+  "name": "the-reef",
+  "version": "0.1.0",
+  "title": "The Reef",
+  "author": "Nathan",
+  "description": "A salvage-yard space location: harvest alien starship scrap and unlock Dilithium technology.",
+  "factorio_version": "2.0",
+  "dependencies": [
+    "base >= 2.0",
+    "space-age >= 2.0",
+    "? flib >= 0.14",
+    "? PlanetsLib >= 1.0"
+  ]
+}
