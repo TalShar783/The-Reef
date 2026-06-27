@@ -7,3 +7,9 @@ Date: 2026-06-27
     - Phase 1: The Reef space-location prototype, Fulgora→Reef space-connection
     - Phase 1: The Reef Discovery technology (requires fulgora-visitation)
     - Phase 1: Initial asteroid spawn definitions using fulgora_aquilo route table
+    - Phase 2: Starship Scrap Chunk item and asteroid-chunk entity (placeholder graphics)
+    - Phase 2: Starship Scrap and Dilithium Crystal items
+    - Phase 2: Crusher recipe (chunk → iron/copper/steel + 3% dilithium drop)
+    - Phase 2: Recycler recipe (scrap → misc outputs)
+    - Phase 2: Scrap chunks added to approach corridor and orbital spawn pools
+    - Phase 2: Discovery technology now unlocks both processing recipes

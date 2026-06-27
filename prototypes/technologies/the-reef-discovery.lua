@@ -25,6 +25,8 @@ data:extend({
         type           = "unlock-space-location",
         space_location = "the-reef",
       },
+      { type = "unlock-recipe", recipe = "starship-scrap-crushing" },
+      { type = "unlock-recipe", recipe = "starship-scrap-recycling" },
     },
     order = "e[the-reef]",
   },

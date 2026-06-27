@@ -7,9 +7,9 @@ require("prototypes.space-connection")
 require("prototypes.technologies.the-reef-discovery")
 
 -- Phase 2: items, asteroids, recipes
--- require("prototypes.items")
--- require("prototypes.asteroids")
--- require("prototypes.recipes")
+require("prototypes.items")
+require("prototypes.asteroids")
+require("prototypes.recipes")
 
 -- Phase 3: additional technologies
 -- require("prototypes.technologies")
