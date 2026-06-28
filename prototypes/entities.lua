@@ -44,7 +44,7 @@ data:extend({ pmr })
 
 local reactor = table.deepcopy(data.raw["reactor"]["nuclear-reactor"])
 reactor.name              = "dilithium-reactor-1"
-reactor.icon              = "__space-age__/graphics/icons/nuclear-reactor.png"
+reactor.icon              = "__base__/graphics/icons/nuclear-reactor.png"
 reactor.icon_size         = 64
 reactor.minable           = { mining_time = 1, result = "dilithium-reactor-1" }
 reactor.consumption       = "20MW"   -- heat output; half nuclear's 40MW for T1
