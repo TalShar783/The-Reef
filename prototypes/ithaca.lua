@@ -55,8 +55,30 @@ PlanetsLib:extend({
       departure = { "planet-to-platform-a" },
     },
 
+    -- Orbital asteroids: Nauvis-like chunk mix (only chunks, no large asteroids)
+    -- at twice the Nauvis probability, plus starship scrap chunks.
+    -- Base: nauvis_vulcanus at position 0.1 (the Nauvis end of the route).
     asteroid_spawn_definitions = (function()
-      local spawns = asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo, 0.4)
+      local all = asteroid_util.spawn_definitions(asteroid_util.nauvis_vulcanus, 0.1)
+
+      -- Keep only chunk entries and double their probability
+      local spawns = {}
+      for _, entry in ipairs(all) do
+        if entry.type == "asteroid-chunk" then
+          entry.probability = entry.probability * 2
+          table.insert(spawns, entry)
+        end
+      end
+
+      -- Starship scrap chunks: present but not dominant (roughly oxide-chunk rate)
+      table.insert(spawns, {
+        asteroid           = "starship-scrap-chunk",
+        type               = "asteroid-chunk",
+        probability        = 0.025,
+        speed              = asteroid_util.standard_speed,
+        angle_when_stopped = 1,
+      })
+
       return spawns
     end)(),
   }
