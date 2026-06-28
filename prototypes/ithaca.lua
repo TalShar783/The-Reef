@@ -1,13 +1,14 @@
 local asteroid_util = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")
+local planet_catalogue_fulgora = require("__space-age__.prototypes.planet.procession-catalogue-fulgora")
 
 -- Ithaca: a stable artificial station in the outer Reef.
--- Defined as a non-landable space-location for now. Full surface content
--- (Cargo Rocket Launch Facility, Gravity Net) will be added in a later phase
--- when it becomes a proper landable planet type.
+-- Surface is a placeholder using Fulgora's map gen — the station will look
+-- industrial, which is acceptable until we build a custom Ithaca surface
+-- (flat concrete, pre-placed Gravity Net and Cargo Rocket facilities).
 
 PlanetsLib:extend({
   {
-    type              = "space-location",
+    type              = "planet",
     name              = "ithaca",
     icon              = "__space-age__/graphics/icons/shattered-planet.png",
     icon_size         = 64,
@@ -23,9 +24,32 @@ PlanetsLib:extend({
     magnitude                = 0.2,
     solar_power_in_space     = 75,
     label_orientation        = 0.25,
-    asteroid_spawn_influence = 0.2,  -- Station is mostly clear of debris
+    asteroid_spawn_influence = 0.2,
 
-    -- Minimal asteroid spawns — it's a managed station area.
+    -- Borrow Fulgora's map gen as a placeholder surface.
+    map_gen_settings = table.deepcopy(data.raw["planet"]["fulgora"].map_gen_settings),
+
+    surface_properties = {
+      ["day-night-cycle"]  = 0,     -- no day/night — it's a station
+      ["magnetic-field"]   = 10,
+      ["solar-power"]      = 75,
+      pressure             = 0,     -- vacuum
+      gravity              = 2,     -- very low gravity
+      temperature          = -150,
+    },
+
+    -- Reuse Fulgora's procession catalogue for the landing/departure cinematic.
+    -- Replace with a custom Ithaca sequence before release.
+    procession_graphic_catalogue = planet_catalogue_fulgora,
+    platform_procession_set = {
+      arrival   = { "planet-to-platform-b" },
+      departure = { "platform-to-planet-a" },
+    },
+    planet_procession_set = {
+      arrival   = { "platform-to-planet-b" },
+      departure = { "planet-to-platform-a" },
+    },
+
     asteroid_spawn_definitions = (function()
       local spawns = asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo, 0.4)
       return spawns
@@ -33,7 +57,7 @@ PlanetsLib:extend({
   }
 })
 
--- Short hop from The Reef to Ithaca — they're in the same region of space.
+-- Short hop from The Reef to Ithaca.
 data:extend({
   {
     type     = "space-connection",
@@ -43,11 +67,8 @@ data:extend({
     to       = "ithaca",
     order    = "e[the-reef]-b[ithaca]",
     length   = 3000,
-    -- space-connection needs route format: spawn_definitions with NO second arg,
-    -- returning entries with spawn_points arrays (not flat probability fields).
     asteroid_spawn_definitions = (function()
       local spawns = asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo)
-      -- Light scrap chunk presence in the lane — route format requires spawn_points.
       table.insert(spawns, {
         asteroid = "starship-scrap-chunk",
         type     = "asteroid-chunk",
@@ -61,13 +82,12 @@ data:extend({
   },
 })
 
--- Ithaca discovery technology: unlocked after researching the Basic PMR.
--- Discovering Ithaca opens up the station as a platform destination.
+-- Ithaca discovery technology.
 data:extend({
   {
-    type    = "technology",
-    name    = "the-reef-ithaca",
-    icon    = "__space-age__/graphics/icons/shattered-planet.png",
+    type      = "technology",
+    name      = "the-reef-ithaca",
+    icon      = "__space-age__/graphics/icons/shattered-planet.png",
     icon_size = 64,
     prerequisites = { "the-reef-basic-pmr" },
     unit = {
