@@ -126,34 +126,39 @@ end
 
 script.on_event(defines.events.on_chunk_generated, on_chunk_generated)
 
--- ─── Asteroid chunk spawning ─────────────────────────────────────────────────
--- Periodically spawns asteroid-chunk entities on the station pad so that
--- Asteroid Collectors placed on Ithaca Station have something to grab.
--- Chunk entities have no collision box so they safely overlap other entities.
+-- ─── Debris spawning ─────────────────────────────────────────────────────────
+-- Spawns type="asteroid" entities on the station pad. These are stationary but
+-- visually spin. When destroyed they drop chunk items via on_entity_died below.
+-- (type="asteroid-chunk" cannot be created on planet surfaces — see common-errors.md)
 --
--- Tuning knobs:
-local SPAWN_INTERVAL       = 300   -- ticks between spawns (300 = every 5 seconds)
-local SPAWN_PAD_RADIUS     = 55    -- stay inside the station circle with margin
+-- Tuning:
+local SPAWN_INTERVAL   = 300   -- ticks between spawns (every 5 seconds)
+local SPAWN_PAD_RADIUS = 55    -- stay inside the station circle
 
--- Type weights mirror the orbital spawn_definitions (doubled Nauvis rates + scrap).
--- Metallic:Carbonic:Oxide ≈ 3:2:1, scrap added at oxide rate.
--- starship-scrap-chunk excluded until entity registration issue is resolved.
--- Vanilla asteroid-chunk entities work; our custom one silently fails to register.
-local CHUNK_POOL = {
-    { name = "metallic-asteroid-chunk", weight = 6 },
-    { name = "carbonic-asteroid-chunk", weight = 4 },
-    { name = "oxide-asteroid-chunk",    weight = 2 },
+-- Pool maps asteroid entity name → drop item name.
+-- Cerys pattern: asteroid entity dies → script spills item, not entity.
+local DEBRIS_POOL = {
+    { entity = "small-metallic-asteroid", item = "metallic-asteroid-chunk", weight = 6 },
+    { entity = "small-carbonic-asteroid", item = "carbonic-asteroid-chunk",  weight = 4 },
+    { entity = "small-oxide-asteroid",    item = "oxide-asteroid-chunk",     weight = 2 },
+    { entity = "ithaca-scrap-debris",     item = "starship-scrap-chunk",     weight = 2 },
 }
-local POOL_TOTAL = 12
+local DEBRIS_TOTAL = 14
 
-local function pick_chunk()
-    local roll = math.random() * POOL_TOTAL
+-- Quick lookup: entity name → item to drop
+local DEBRIS_DROPS = {}
+for _, entry in ipairs(DEBRIS_POOL) do
+    DEBRIS_DROPS[entry.entity] = entry.item
+end
+
+local function pick_debris()
+    local roll = math.random() * DEBRIS_TOTAL
     local cum  = 0
-    for _, entry in ipairs(CHUNK_POOL) do
+    for _, entry in ipairs(DEBRIS_POOL) do
         cum = cum + entry.weight
-        if roll < cum then return entry.name end
+        if roll < cum then return entry.entity end
     end
-    return "metallic-asteroid-chunk"
+    return "small-metallic-asteroid"
 end
 
 script.on_nth_tick(SPAWN_INTERVAL, function()
@@ -162,16 +167,62 @@ script.on_nth_tick(SPAWN_INTERVAL, function()
 
     local angle = math.random() * 2 * math.pi
     local dist  = math.random() * SPAWN_PAD_RADIUS
-    local pos   = {
-        math.floor(dist * math.cos(angle) + 0.5),
-        math.floor(dist * math.sin(angle) + 0.5),
-    }
-    -- pcall so an unknown entity name degrades gracefully instead of crashing
-    local ok, err = pcall(surface.create_entity, surface, {
-        name     = pick_chunk(),
-        position = pos,
+    surface.create_entity({
+        name     = pick_debris(),
+        position = {
+            math.floor(dist * math.cos(angle) + 0.5),
+            math.floor(dist * math.sin(angle) + 0.5),
+        },
+        force = "neutral",
     })
-    if not ok then
-        log("[The Reef] Ithaca chunk spawn failed: " .. tostring(err))
+end)
+
+-- ─── Item drops when debris is destroyed ─────────────────────────────────────
+-- Mimics Cerys approach: intercept on_entity_died for our asteroid entities on
+-- Ithaca, spill the corresponding chunk item. The asteroid's own dying_trigger_effect
+-- would attempt create-asteroid-chunk which silently fails on planet surfaces.
+
+script.on_event(defines.events.on_entity_died, function(event)
+    local entity = event.entity
+    if not (entity and entity.valid) then return end
+    if entity.surface.name ~= "ithaca" then return end
+
+    local drop = DEBRIS_DROPS[entity.name]
+    if not drop then return end
+
+    entity.surface.spill_item_stack({
+        position                  = entity.position,
+        stack                     = { name = drop, count = 1 },
+        enable_looted             = true,
+        force                     = event.force,
+        allow_belts               = true,
+        max_radius                = 2,
+        use_start_position_on_failure = true,
+    })
+end)
+
+-- ─── Tile restoration ────────────────────────────────────────────────────────
+-- When space-platform-foundation tiles are mined on Ithaca, the surface reverts
+-- to its map-gen base tile (Nauvis terrain). Immediately replace with empty-space.
+
+local function restore_tiles(surface_index, tiles)
+    local surface = game.surfaces[surface_index]
+    if not (surface and surface.valid and surface.name == "ithaca") then return end
+    local replacements = {}
+    for _, t in ipairs(tiles) do
+        if t.old_tile and t.old_tile.name == "space-platform-foundation" then
+            replacements[#replacements + 1] = { name = "empty-space", position = t.position }
+        end
     end
+    if #replacements > 0 then
+        surface.set_tiles(replacements)
+    end
+end
+
+script.on_event(defines.events.on_player_mined_tile, function(event)
+    restore_tiles(event.surface_index, event.tiles)
+end)
+
+script.on_event(defines.events.on_robot_mined_tile, function(event)
+    restore_tiles(event.surface_index, event.tiles)
 end)
