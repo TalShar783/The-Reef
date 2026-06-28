@@ -209,8 +209,10 @@ data:extend({
   },
 
   -- Recycling --------------------------------------------------------------
-  -- Takes processed Starship Scrap and extracts misc components.
-  -- Lower yields than crushing a raw chunk — reward for the extra processing step.
+  -- Starship Scrap → salvage from alien vessel interiors.
+  -- Three tiers: raw materials (high), platform foundations (middling),
+  -- fully assembled platform structures (low/rare).
+  -- All item names verified against game files before use.
   {
     type     = "recipe",
     name     = "starship-scrap-recycling",
@@ -221,16 +223,35 @@ data:extend({
     order    = "e-b",
     enabled  = false,
     auto_recycle = false,
-    energy_required = 0.5,
+    energy_required = 2,
     ingredients = {
       { type = "item", name = "starship-scrap", amount = 1 },
     },
     results = {
-      { type = "item", name = "iron-plate",       amount = 1, probability = 0.30, show_details_in_recipe_tooltip = false },
-      { type = "item", name = "copper-plate",     amount = 1, probability = 0.20, show_details_in_recipe_tooltip = false },
-      { type = "item", name = "steel-plate",      amount = 1, probability = 0.08, show_details_in_recipe_tooltip = false },
-      { type = "item", name = "advanced-circuit", amount = 1, probability = 0.03, show_details_in_recipe_tooltip = false },
-      { type = "item", name = "dilithium-crystal",amount = 1, probability = 0.01, show_details_in_recipe_tooltip = false },
+      -- ── High chance: raw materials ──────────────────────────────────────
+      { type = "item", name = "low-density-structure", amount = 1, probability = 0.28, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "steel-plate",            amount = 2, probability = 0.25, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "copper-cable",           amount = 3, probability = 0.22, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "electronic-circuit",     amount = 2, probability = 0.20, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "advanced-circuit",       amount = 1, probability = 0.12, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "plastic-bar",            amount = 1, probability = 0.10, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "battery",                amount = 1, probability = 0.08, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "processing-unit",        amount = 1, probability = 0.05, show_details_in_recipe_tooltip = false },
+
+      -- ── Middling chance: platform structure ─────────────────────────────
+      { type = "item", name = "space-platform-foundation", amount = 2, probability = 0.12, show_details_in_recipe_tooltip = false },
+
+      -- ── Low chance: assembled platform structures ────────────────────────
+      { type = "item", name = "solar-panel",        amount = 1, probability = 0.04, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "accumulator",        amount = 1, probability = 0.03, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "gun-turret",         amount = 1, probability = 0.03, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "asteroid-collector", amount = 1, probability = 0.03, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "radar",              amount = 1, probability = 0.02, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "laser-turret",       amount = 1, probability = 0.02, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "rocket-turret",      amount = 1, probability = 0.02, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "thruster",           amount = 1, probability = 0.02, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "roboport",           amount = 1, probability = 0.01, show_details_in_recipe_tooltip = false },
+      { type = "item", name = "dilithium-crystal",  amount = 1, probability = 0.01, show_details_in_recipe_tooltip = false },
     },
   },
 })
