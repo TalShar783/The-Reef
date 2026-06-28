@@ -1,44 +1,62 @@
 -- Ithaca surface tile placement.
 --
--- Main station: space-platform-foundation within STATION_RADIUS, ragged edge.
--- Void: empty-space everywhere else, with sparse scattered island fragments.
+-- Uses smooth value noise (fBm) + domain warping for organic, irregular shapes.
+-- Sine waves at fixed frequencies were replaced because they produce visible
+-- repeating patterns — fBm gives multi-scale, chaotic variation.
 --
--- Tuning knobs:
---   STATION_RADIUS       main pad radius (tiles from origin)
---   EDGE_RAGGEDNESS      peak deviation of the jagged station edge (tiles)
---   ISLAND_GRID_SIZE     coarse grid cell size for island placement
---   ISLAND_DENSITY       fraction of grid cells that contain an island (0–1)
---   ISLAND_MAX_RADIUS    maximum island radius in tiles (user spec: 10)
---   ISLAND_EXCLUSION     tiles beyond the station edge before islands can appear
---                        (prevents islands from merging with the main pad)
+-- Tuning knobs at the top:
 
-local STATION_RADIUS   = 64
-local EDGE_RAGGEDNESS  = 10
-local ISLAND_GRID_SIZE = 20
-local ISLAND_DENSITY   = 0.45
-local ISLAND_MAX_RADIUS = 10
-local ISLAND_EXCLUSION = 15   -- clear zone between station edge and first islands
+local STATION_RADIUS    = 64   -- base station pad radius (tiles)
+local EDGE_RAGGEDNESS   = 20   -- max deviation at station edge (tiles); larger = more beat-up
+local ISLAND_GRID_SIZE  = 35   -- grid cell size for island centers (~80% sparser than before)
+local ISLAND_DENSITY    = 0.09 -- fraction of cells with islands (~80% less than before)
+local ISLAND_MAX_RADIUS = 10   -- max island radius (tiles)
+local ISLAND_WARP       = 0.6  -- island shape irregularity (0 = circle, 1 = very jagged)
+local ISLAND_EXCLUSION  = 20   -- clear gap between station edge and nearest island
 
--- Simple hash: maps two floats to a pseudo-random value in [0, 1).
--- Uses the sin-fract trick; fine for visual randomness.
+-- ─── Noise primitives ───────────────────────────────────────────────────────
+
+-- Hash: maps two floats to a pseudo-random value in [0, 1).
 local function hash(a, b)
     local v = math.sin(a * 127.1 + b * 311.7) * 43758.5453
     return v - math.floor(v)
 end
 
--- Ragged offset for the station perimeter.
--- Angle-based so the waviness follows the circle contour naturally.
-local function edge_offset(x, y)
-    local a = math.atan2(y, x)
-    return math.sin(a *  7        ) * 4
-         + math.sin(a * 13 + 1.2  ) * 3
-         + math.sin(a * 19 - 0.8  ) * 2
-         + math.cos(a *  5 + 0.5  ) * 1
+-- Smooth value noise: bilinear interpolation over a hash grid with smoothstep.
+local function vnoise(x, y)
+    local ix, iy = math.floor(x), math.floor(y)
+    local fx, fy = x - ix, y - iy
+    local ux = fx * fx * (3 - 2 * fx)   -- smoothstep
+    local uy = fy * fy * (3 - 2 * fy)
+    local a = hash(ix,   iy  )
+    local b = hash(ix+1, iy  )
+    local c = hash(ix,   iy+1)
+    local d = hash(ix+1, iy+1)
+    return a + (b-a)*ux + (c-a)*uy + (a-b-c+d)*ux*uy
 end
 
--- Returns true if (x, y) falls inside a scattered island.
+-- Fractal Brownian Motion: 4 octaves of value noise, result in [~0, 1].
+local function fbm(x, y)
+    return vnoise(x,       y      ) * 0.500
+         + vnoise(x * 2.1, y * 2.1) * 0.250
+         + vnoise(x * 4.3, y * 4.3) * 0.125
+         + vnoise(x * 8.7, y * 8.7) * 0.063
+end
+
+-- ─── Station edge ────────────────────────────────────────────────────────────
+
+-- Returns a signed offset applied to the station radius at position (x, y).
+-- fBm with a moderate scale creates large dents and small bumps simultaneously.
+local function edge_noise(x, y)
+    return (fbm(x * 0.04, y * 0.04) - 0.5) * EDGE_RAGGEDNESS * 2
+end
+
+-- ─── Island placement ────────────────────────────────────────────────────────
+
+-- Returns true if (x, y) falls inside a scattered island fragment.
 -- Islands are placed on a jittered grid; each cell independently decides
--- whether to host an island and what size (1 to ISLAND_MAX_RADIUS).
+-- whether it hosts an island, its center, and its base radius.
+-- The shape is then domain-warped so islands look amoeba-like, not circular.
 local function is_island(x, y)
     local gx = math.floor(x / ISLAND_GRID_SIZE)
     local gy = math.floor(y / ISLAND_GRID_SIZE)
@@ -48,20 +66,26 @@ local function is_island(x, y)
             local cx = gx + dgx
             local cy = gy + dgy
 
-            -- Does this cell have an island?
+            -- Does this cell contain an island?
             if hash(cx * 3.7 + 0.5, cy * 6.1 + 1.3) < ISLAND_DENSITY then
-                -- Jitter the center within the cell
+                -- Jitter center within the cell
                 local jx = cx * ISLAND_GRID_SIZE
-                       + math.floor(hash(cx + 0.1, cy + 0.2) * ISLAND_GRID_SIZE)
+                         + math.floor(hash(cx + 0.1, cy + 0.2) * ISLAND_GRID_SIZE)
                 local jy = cy * ISLAND_GRID_SIZE
-                       + math.floor(hash(cx + 0.3, cy + 0.4) * ISLAND_GRID_SIZE)
+                         + math.floor(hash(cx + 0.3, cy + 0.4) * ISLAND_GRID_SIZE)
 
-                -- Random radius: 2 to ISLAND_MAX_RADIUS
+                -- Random base radius: 2 to ISLAND_MAX_RADIUS
                 local r = 2 + math.floor(hash(cx + 0.7, cy + 0.9) * (ISLAND_MAX_RADIUS - 1))
 
+                -- Domain-warp the local coordinates for an organic shape.
+                -- Two independent fbm samples displace dx and dy.
                 local dx = x - jx
                 local dy = y - jy
-                if dx * dx + dy * dy <= r * r then
+                local s = 0.18   -- noise scale relative to island
+                local wdx = dx + (fbm(dx * s + cx * 0.1,       dy * s + cy * 0.1      ) - 0.5) * r * ISLAND_WARP * 2
+                local wdy = dy + (fbm(dx * s + cx * 0.1 + 5.3, dy * s + cy * 0.1 + 3.7) - 0.5) * r * ISLAND_WARP * 2
+
+                if wdx * wdx + wdy * wdy <= r * r then
                     return true
                 end
             end
@@ -69,6 +93,8 @@ local function is_island(x, y)
     end
     return false
 end
+
+-- ─── Chunk handler ───────────────────────────────────────────────────────────
 
 local function on_chunk_generated(event)
     if event.surface.name ~= "ithaca" then return end
@@ -81,13 +107,11 @@ local function on_chunk_generated(event)
         for y = area.left_top.y, area.right_bottom.y - 1 do
             local name
             local dist = math.sqrt(x * x + y * y)
-            local pad_edge = STATION_RADIUS + edge_offset(x, y)
+            local effective_r = STATION_RADIUS + edge_noise(x, y)
 
-            if dist <= pad_edge then
-                -- Main station pad
+            if dist <= effective_r then
                 name = "space-platform-foundation"
             elseif dist > exclusion_r and is_island(x, y) then
-                -- Scattered island fragment (outside the clear zone)
                 name = "space-platform-foundation"
             else
                 name = "empty-space"
