@@ -95,6 +95,10 @@ local function is_island(x, y)
 end
 
 -- ─── Chunk handler ───────────────────────────────────────────────────────────
+-- Alien Biomes hooks on_chunk_generated and runs AFTER ours, overwriting our
+-- tiles with biome terrain on any surface with Nauvis-like conditions.
+-- Fix: queue chunks on generation, then apply our tiles one tick later so we
+-- always run last.  storage.ithaca_pending_chunks is initialised in on_init.
 
 -- ─── Deposit placement ───────────────────────────────────────────────────────
 -- About 40% of islands get a small scrap deposit (ithaca-scrap-deposit).
@@ -118,12 +122,8 @@ local function get_island_data(cx, cy)
     return nil
 end
 
-local function on_chunk_generated(event)
-    if event.surface.name ~= "ithaca" then return end
-
-    local area      = event.area
+local function process_ithaca_chunk(surface, area)
     local tiles     = {}
-    local surface   = event.surface
     local exclusion_r = STATION_RADIUS + EDGE_RAGGEDNESS + ISLAND_EXCLUSION
 
     -- ── Tile placement ────────────────────────────────────────────────────────
@@ -179,6 +179,28 @@ local function on_chunk_generated(event)
         end
     end
 end
+
+-- Queue chunk on generation; process next tick to run after Alien Biomes.
+script.on_event(defines.events.on_chunk_generated, function(event)
+    if event.surface.name ~= "ithaca" then return end
+    storage.ithaca_pending_chunks = storage.ithaca_pending_chunks or {}
+    table.insert(storage.ithaca_pending_chunks, {
+        surface_index = event.surface.index,
+        area          = event.area,
+    })
+end)
+
+script.on_nth_tick(1, function()
+    if not storage.ithaca_pending_chunks or #storage.ithaca_pending_chunks == 0 then return end
+    local pending = storage.ithaca_pending_chunks
+    storage.ithaca_pending_chunks = {}
+    for _, chunk in ipairs(pending) do
+        local surface = game.surfaces[chunk.surface_index]
+        if surface and surface.valid then
+            process_ithaca_chunk(surface, chunk.area)
+        end
+    end
+end)
 
 -- ─── Tile restoration ────────────────────────────────────────────────────────
 -- When space-platform-foundation tiles are mined on Ithaca, the surface reverts
