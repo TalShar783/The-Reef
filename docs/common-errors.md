@@ -113,6 +113,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Using a non-existent item-subgroup name on a recipe
+
+**Wrong:** `subgroup = "combat"` (this subgroup does not exist in vanilla)
+**Correct:** Omit `subgroup` to inherit from the result item, or verify the subgroup name exists in `data.raw["item-subgroup"]`
+**Source:** Factorio loader error during The Reef Phase 3: "item-subgroup with name 'combat' does not exist"
+**Note:** Recipe subgroup names must match a defined `item-subgroup` prototype. Vanilla subgroups include `"ammo"`, `"capsule"`, `"intermediate-product"`, `"space-material"` etc. — but NOT `"combat"`. Omitting `subgroup` is always safe and inherits from the result item.
+
+---
+
 ### Duplicate section headers in locale files
 
 **Wrong:** Multiple `[item-name]` (or any) sections in the same `.cfg` file

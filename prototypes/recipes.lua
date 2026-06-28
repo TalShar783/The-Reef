@@ -68,7 +68,6 @@ data:extend({
     icon     = "__base__/graphics/icons/grenade.png",
     icon_size = 64,
     category = "the-reef-pmr",
-    subgroup = "combat",
     order    = "z[pmr]-b",
     enabled  = false,
     energy_required = 1,
@@ -90,12 +89,11 @@ data:extend({
     icon     = "__base__/graphics/icons/piercing-rounds-magazine.png",
     icon_size = 64,
     category = "the-reef-pmr",
-    subgroup = "combat",
     order    = "z[pmr]-c",
     enabled  = false,
     energy_required = 1,
     ingredients = {
-      { type = "item", name = "iron-ore",   amount = 138 },
+      { type = "item", name = "iron-ore",   amount = 13 },
       { type = "item", name = "copper-ore", amount = 2  },
     },
     results = {
