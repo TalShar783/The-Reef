@@ -213,6 +213,24 @@ asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo, 0.9)
 
 > **Source limitation:** No `type = "recipe"` prototype definition body appears in the source material. Field names cannot be confirmed.
 
+### Subgroup guidance (confirmed from live testing)
+
+The `subgroup` field on a recipe must match a defined `item-subgroup` prototype. **Prefer omitting it** — Factorio then inherits the subgroup from the primary result item, which is always valid.
+
+If you must specify one, use only confirmed vanilla subgroups:
+
+| Subgroup | Contents |
+|---|---|
+| `"intermediate-product"` | Circuits, plates, gears, etc. |
+| `"ammo"` | Ammunition magazines |
+| `"capsule"` | Grenades, combat items |
+| `"space-material"` | Asteroid chunks, Reef materials |
+| `"space-crushing"` | Crusher and recycler recipes |
+| `"production-machine"` | Assembling machines, furnaces |
+| `"planet-connections"` | Space-connection prototypes |
+
+**Do NOT use** `"combat"` — it does not exist and will crash at load.
+
 ---
 
 ## technology
