@@ -39,8 +39,6 @@ data:extend({
     subgroup      = "the-reef-materials",
     order         = "d[fuel-cell]",
     stack_size    = 50,
-    fuel_category = "dilithium-fuel",
-    fuel_value    = "2GJ",
   },
   {
     type      = "tool",

@@ -7,11 +7,7 @@ data:extend({
     name = "the-reef-pmr",
   },
 
-  -- Dilithium fuel category — Dilithium Fuel Cells burn only in dilithium-fuel burners.
-  {
-    type = "fuel-category",
-    name = "dilithium-fuel",
-  },
+
 })
 
 -- Basic PMR (Probabilistic Matter Recombinator)
@@ -36,28 +32,30 @@ pmr.fixed_recipe     = nil  -- assembling-machine-1 has no fixed recipe but clea
 data:extend({ pmr })
 
 -- Dilithium Reactor T1
--- Phase 4: data-only. Deepcopy of nuclear-reactor so all required heat/fuel
--- fields are populated correctly. Takes Dilithium Fuel Cells (dilithium-fuel
--- category), outputs 20MW of heat (half nuclear). Water requirement and
--- direct-electricity conversion (no heat pipes) are Phase 5 scripting goals.
--- Placeholder graphics: nuclear reactor. Replace with custom art before release.
+-- Phase 4: data-only. Uses electric-energy-interface as the base — this is the
+-- correct foundation for an entity that injects electricity into the grid via script.
+-- Static 20MW production for now; Phase 5 scripting makes it conditional on
+-- Dilithium Fuel Cell + ice consumption.
+-- Size: 2x2. Placeholder graphics: accumulator (tinted). Replace before release.
 
-local reactor = table.deepcopy(data.raw["reactor"]["nuclear-reactor"])
-reactor.name              = "dilithium-reactor-1"
-reactor.icon              = "__base__/graphics/icons/nuclear-reactor.png"
-reactor.icon_size         = 64
-reactor.minable           = { mining_time = 1, result = "dilithium-reactor-1" }
-reactor.consumption       = "20MW"   -- heat output; half nuclear's 40MW for T1
-reactor.neighbour_bonus   = 0        -- no adjacency bonus (it's not a nuclear array)
--- Override fuel category to dilithium-fuel only
+local reactor = table.deepcopy(data.raw["electric-energy-interface"]["electric-energy-interface"])
+reactor.name          = "dilithium-reactor-1"
+reactor.icon          = "__base__/graphics/icons/nuclear-reactor.png"
+reactor.icon_size     = 64
+reactor.hidden        = false
+reactor.subgroup      = "the-reef-machines"
+reactor.order         = "b[reactor]"
+reactor.minable       = { mining_time = 1, result = "dilithium-reactor-1" }
+reactor.collision_box = {{ -1, -1 }, { 1, 1 }}   -- 2x2
+reactor.selection_box = {{ -1, -1 }, { 1, 1 }}
 reactor.energy_source = {
-  type                    = "burner",
-  fuel_categories         = { "dilithium-fuel" },
-  effectivity             = 1,
-  fuel_inventory_size     = 1,
-  burnt_inventory_size    = 1,
-  emissions_per_minute    = {},
+    type              = "electric",
+    buffer_capacity   = "2MJ",
+    usage_priority    = "primary-output",
+    output_flow_limit = "20MW",
 }
+reactor.energy_production = "20MW"
+reactor.energy_usage      = "0kW"
 
 data:extend({ reactor })
 
