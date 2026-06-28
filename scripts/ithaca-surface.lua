@@ -125,3 +125,47 @@ local function on_chunk_generated(event)
 end
 
 script.on_event(defines.events.on_chunk_generated, on_chunk_generated)
+
+-- ─── Asteroid chunk spawning ─────────────────────────────────────────────────
+-- Periodically spawns asteroid-chunk entities on the station pad so that
+-- Asteroid Collectors placed on Ithaca Station have something to grab.
+-- Chunk entities have no collision box so they safely overlap other entities.
+--
+-- Tuning knobs:
+local SPAWN_INTERVAL       = 300   -- ticks between spawns (300 = every 5 seconds)
+local SPAWN_PAD_RADIUS     = 55    -- stay inside the station circle with margin
+
+-- Type weights mirror the orbital spawn_definitions (doubled Nauvis rates + scrap).
+-- Metallic:Carbonic:Oxide ≈ 3:2:1, scrap added at oxide rate.
+local CHUNK_POOL = {
+    { name = "metallic-asteroid-chunk", weight = 6 },
+    { name = "carbonic-asteroid-chunk", weight = 4 },
+    { name = "oxide-asteroid-chunk",    weight = 2 },
+    { name = "starship-scrap-chunk",    weight = 2 },
+}
+local POOL_TOTAL = 14
+
+local function pick_chunk()
+    local roll = math.random() * POOL_TOTAL
+    local cum  = 0
+    for _, entry in ipairs(CHUNK_POOL) do
+        cum = cum + entry.weight
+        if roll < cum then return entry.name end
+    end
+    return "metallic-asteroid-chunk"
+end
+
+script.on_nth_tick(SPAWN_INTERVAL, function()
+    local surface = game.surfaces["ithaca"]
+    if not (surface and surface.valid) then return end
+
+    local angle = math.random() * 2 * math.pi
+    local dist  = math.random() * SPAWN_PAD_RADIUS
+    surface.create_entity({
+        name     = pick_chunk(),
+        position = {
+            math.floor(dist * math.cos(angle) + 0.5),
+            math.floor(dist * math.sin(angle) + 0.5),
+        },
+    })
+end)
