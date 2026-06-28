@@ -60,3 +60,17 @@ reactor.energy_source = {
 }
 
 data:extend({ reactor })
+
+-- Cargo Hatch (basic)
+-- A 1-slot container that syncs with the platform cargo hub.
+-- inventory_size = 1 enforces the single-stack buffer at the entity level.
+-- Placeholder graphics: iron chest. Replace with custom art before release.
+
+local hatch = table.deepcopy(data.raw["container"]["iron-chest"])
+hatch.name           = "cargo-hatch"
+hatch.icon           = "__base__/graphics/icons/iron-chest.png"
+hatch.icon_size      = 64
+hatch.inventory_size = 1
+hatch.minable        = { mining_time = 0.5, result = "cargo-hatch" }
+
+data:extend({ hatch })

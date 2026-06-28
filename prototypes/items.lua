@@ -78,6 +78,18 @@ data:extend({
     place_result = "dilithium-reactor-1",
   },
 
+  -- Cargo Hatch: single-stack access point to the platform cargo hub.
+  {
+    type         = "item",
+    name         = "cargo-hatch",
+    icon         = "__base__/graphics/icons/iron-chest.png",
+    icon_size    = 64,
+    subgroup     = "production-machine",
+    order        = "z[hatch]-a",
+    stack_size   = 50,
+    place_result = "cargo-hatch",
+  },
+
   -- Basic PMR: the Probabilistic Matter Recombinator (buildable item).
   {
     type         = "item",

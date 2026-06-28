@@ -166,6 +166,27 @@ data:extend({
     },
   },
 
+  -- Cargo Hatch (building recipe).
+  {
+    type     = "recipe",
+    name     = "cargo-hatch",
+    icon     = "__base__/graphics/icons/iron-chest.png",
+    icon_size = 64,
+    category = "crafting",
+    subgroup = "production-machine",
+    order    = "z[hatch]-a",
+    enabled  = false,
+    energy_required = 5,
+    ingredients = {
+      { type = "item", name = "iron-plate",         amount = 10 },
+      { type = "item", name = "steel-plate",        amount = 5  },
+      { type = "item", name = "electronic-circuit", amount = 5  },
+    },
+    results = {
+      { type = "item", name = "cargo-hatch", amount = 1 },
+    },
+  },
+
   -- Basic PMR (building recipe) — crafted in an assembling machine.
   {
     type     = "recipe",

@@ -25,3 +25,5 @@ Date: 2026-06-27
     - Phase 4: Dilithium Reactor T1 entity (reactor deepcopy, dilithium-fuel, 20MW)
     - Phase 4: dilithium-science technology (gates Dilithium Era)
     - Phase 4: dilithium-reactor-1 technology (costs dilithium science packs)
+    - Phase 4: Cargo Hatch entity, item, recipe, technology
+    - Phase 4: cargo-hatch.lua — 1-stack Option B sync, configuration GUI
