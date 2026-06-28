@@ -94,22 +94,22 @@ local function is_island(x, y)
     return false
 end
 
--- ─── Chunk handler ───────────────────────────────────────────────────────────
--- Alien Biomes hooks on_chunk_generated and runs AFTER ours, overwriting our
--- tiles with biome terrain on any surface with Nauvis-like conditions.
--- Fix: queue chunks on generation, then apply our tiles one tick later so we
--- always run last.  storage.ithaca_pending_chunks is initialised in on_init.
+-- ─── Deposit and chunk configuration ─────────────────────────────────────────
 
--- ─── Deposit placement ───────────────────────────────────────────────────────
--- About 40% of islands get a small scrap deposit (ithaca-scrap-deposit).
--- Amounts are randomised in the range below.
+-- Island deposits: fill each island with multiple deposit tiles.
+local DEPOSIT_DENSITY = 0.40   -- fraction of islands that get a deposit
+local DEPOSIT_MIN     = 300
+local DEPOSIT_MAX     = 500
 
-local DEPOSIT_DENSITY  = 0.40   -- fraction of islands that have a deposit
-local DEPOSIT_MIN      = 200
-local DEPOSIT_MAX      = 500
+-- Center patch: placed once near the station edge as a starter deposit.
+-- ~29 tiles in a radius-3 circle at roughly (50, 20) from station center.
+local CENTER_PATCH_X          = 50
+local CENTER_PATCH_Y          = 20
+local CENTER_PATCH_RADIUS     = 3
+local CENTER_PATCH_AMOUNT_MIN = 450
+local CENTER_PATCH_AMOUNT_MAX = 550
 
--- Returns the island data for grid cell (cx, cy), or nil if no island.
--- Factored out so we can reuse it for deposit placement.
+-- Returns island data for grid cell (cx, cy), or nil.
 local function get_island_data(cx, cy)
     if hash(cx * 3.7 + 0.5, cy * 6.1 + 1.3) < ISLAND_DENSITY then
         local jx = cx * ISLAND_GRID_SIZE
@@ -122,18 +122,27 @@ local function get_island_data(cx, cy)
     return nil
 end
 
-local function process_ithaca_chunk(surface, area)
-    local tiles     = {}
+-- ─── Chunk handler ───────────────────────────────────────────────────────────
+-- Direct (non-deferred): The Reef loads after Alien Biomes alphabetically, so
+-- our on_chunk_generated handler is registered second and fires second — we
+-- always overwrite whatever Alien Biomes placed.
+
+script.on_event(defines.events.on_chunk_generated, function(event)
+    if event.surface.name ~= "ithaca" then return end
+
+    local surface     = event.surface
+    local area        = event.area
+    local tiles       = {}
     local exclusion_r = STATION_RADIUS + EDGE_RAGGEDNESS + ISLAND_EXCLUSION
 
     -- ── Tile placement ────────────────────────────────────────────────────────
     for x = area.left_top.x, area.right_bottom.x - 1 do
         for y = area.left_top.y, area.right_bottom.y - 1 do
             local name
-            local dist = math.sqrt(x * x + y * y)
-            local effective_r = STATION_RADIUS + edge_noise(x, y)
+            local dist      = math.sqrt(x * x + y * y)
+            local eff_r     = STATION_RADIUS + edge_noise(x, y)
 
-            if dist <= effective_r then
+            if dist <= eff_r then
                 name = "space-platform-foundation"
             elseif dist > exclusion_r and is_island(x, y) then
                 name = "space-platform-foundation"
@@ -147,64 +156,72 @@ local function process_ithaca_chunk(surface, area)
 
     surface.set_tiles(tiles)
 
-    -- ── Ore deposit placement ─────────────────────────────────────────────────
-    -- For each island grid cell whose center falls in this chunk, optionally
-    -- place a scrap deposit at the island centre.
-    local gx_min = math.floor(area.left_top.x    / ISLAND_GRID_SIZE) - 1
-    local gx_max = math.floor((area.right_bottom.x - 1) / ISLAND_GRID_SIZE) + 1
-    local gy_min = math.floor(area.left_top.y    / ISLAND_GRID_SIZE) - 1
-    local gy_max = math.floor((area.right_bottom.y - 1) / ISLAND_GRID_SIZE) + 1
-
-    for cx = gx_min, gx_max do
-        for cy = gy_min, gy_max do
-            local island = get_island_data(cx, cy)
-            if island then
-                -- Only process islands whose centre is inside this chunk
-                local ix, iy = island.x, island.y
-                if ix >= area.left_top.x and ix < area.right_bottom.x
-                and iy >= area.left_top.y and iy < area.right_bottom.y then
-                    -- Separate hash seed so deposit chance is independent of island existence
-                    if hash(cx + 41.1, cy + 73.7) < DEPOSIT_DENSITY then
-                        local amount = DEPOSIT_MIN + math.floor(
-                            hash(cx + 5.5, cy + 3.3) * (DEPOSIT_MAX - DEPOSIT_MIN)
+    -- ── Center starter patch (placed once) ───────────────────────────────────
+    if not storage.ithaca_center_patch_placed then
+        local cpx, cpy = CENTER_PATCH_X, CENTER_PATCH_Y
+        if cpx >= area.left_top.x and cpx < area.right_bottom.x
+        and cpy >= area.left_top.y and cpy < area.right_bottom.y then
+            storage.ithaca_center_patch_placed = true
+            local r2 = CENTER_PATCH_RADIUS * CENTER_PATCH_RADIUS
+            for dx = -CENTER_PATCH_RADIUS, CENTER_PATCH_RADIUS do
+                for dy = -CENTER_PATCH_RADIUS, CENTER_PATCH_RADIUS do
+                    if dx * dx + dy * dy <= r2 then
+                        local amt = CENTER_PATCH_AMOUNT_MIN + math.floor(
+                            hash(cpx + dx + 0.3, cpy + dy + 0.7)
+                            * (CENTER_PATCH_AMOUNT_MAX - CENTER_PATCH_AMOUNT_MIN)
                         )
                         surface.create_entity({
                             name     = "ithaca-scrap-deposit",
-                            position = { ix, iy },
-                            amount   = amount,
+                            position = { cpx + dx, cpy + dy },
+                            amount   = amt,
                         })
                     end
                 end
             end
         end
     end
-end
 
--- Queue chunk on generation; process next tick to run after Alien Biomes.
-script.on_event(defines.events.on_chunk_generated, function(event)
-    if event.surface.name ~= "ithaca" then return end
-    storage.ithaca_pending_chunks = storage.ithaca_pending_chunks or {}
-    table.insert(storage.ithaca_pending_chunks, {
-        surface_index = event.surface.index,
-        area          = event.area,
-    })
-end)
+    -- ── Island deposits (fill each island) ───────────────────────────────────
+    local gx_min = math.floor(area.left_top.x          / ISLAND_GRID_SIZE) - 1
+    local gx_max = math.floor((area.right_bottom.x - 1) / ISLAND_GRID_SIZE) + 1
+    local gy_min = math.floor(area.left_top.y          / ISLAND_GRID_SIZE) - 1
+    local gy_max = math.floor((area.right_bottom.y - 1) / ISLAND_GRID_SIZE) + 1
 
-script.on_nth_tick(1, function()
-    if not storage.ithaca_pending_chunks or #storage.ithaca_pending_chunks == 0 then return end
-    local pending = storage.ithaca_pending_chunks
-    storage.ithaca_pending_chunks = {}
-    for _, chunk in ipairs(pending) do
-        local surface = game.surfaces[chunk.surface_index]
-        if surface and surface.valid then
-            process_ithaca_chunk(surface, chunk.area)
+    for cx = gx_min, gx_max do
+        for cy = gy_min, gy_max do
+            local island = get_island_data(cx, cy)
+            if island and hash(cx + 41.1, cy + 73.7) < DEPOSIT_DENSITY then
+                local ix, iy = island.x, island.y
+                -- Only trigger when island centre falls in this chunk
+                if ix >= area.left_top.x and ix < area.right_bottom.x
+                and iy >= area.left_top.y and iy < area.right_bottom.y then
+                    -- Fill the island area with deposit tiles
+                    local dep_r  = math.max(1, island.r - 1)
+                    local dep_r2 = dep_r * dep_r
+                    for dx = -dep_r, dep_r do
+                        for dy = -dep_r, dep_r do
+                            if dx * dx + dy * dy <= dep_r2 then
+                                local amt = DEPOSIT_MIN + math.floor(
+                                    hash(ix + dx + 0.5, iy + dy + 0.3)
+                                    * (DEPOSIT_MAX - DEPOSIT_MIN)
+                                )
+                                surface.create_entity({
+                                    name     = "ithaca-scrap-deposit",
+                                    position = { ix + dx, iy + dy },
+                                    amount   = amt,
+                                })
+                            end
+                        end
+                    end
+                end
+            end
         end
     end
 end)
 
 -- ─── Tile restoration ────────────────────────────────────────────────────────
--- When space-platform-foundation tiles are mined on Ithaca, the surface reverts
--- to its map-gen base tile (Nauvis terrain). Immediately replace with empty-space.
+-- When island foundation tiles are mined, restore to empty-space.
+-- Main station tiles: let the natural surface tile show through (user-intended).
 
 local function restore_tiles(surface_index, tiles)
     local surface = game.surfaces[surface_index]
@@ -213,12 +230,9 @@ local function restore_tiles(surface_index, tiles)
     for _, t in ipairs(tiles) do
         if t.old_tile and t.old_tile.name == "space-platform-foundation" then
             local x, y = t.position.x, t.position.y
-            local dist = math.sqrt(x * x + y * y)
-            if dist <= STATION_RADIUS + EDGE_RAGGEDNESS + 5 then
-                -- Main station pad: reveal volcanic rock when foundation is removed
-                replacements[#replacements + 1] = { name = "volcanic-jagged-ground", position = t.position }
-            else
-                -- Islands and edges: restore to void
+            local dist  = math.sqrt(x * x + y * y)
+            -- Only restore island tiles; main station shows natural tile underneath
+            if dist > STATION_RADIUS + EDGE_RAGGEDNESS + 5 then
                 replacements[#replacements + 1] = { name = "empty-space", position = t.position }
             end
         end

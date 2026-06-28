@@ -8,7 +8,7 @@ local cargo_hatch = require("scripts.cargo-hatch")
 
 script.on_init(function()
     cargo_hatch.on_init()
-    storage.ithaca_pending_chunks = {}
+    storage.ithaca_center_patch_placed = false
 end)
 
 -- Register / unregister hatches on build and removal.
