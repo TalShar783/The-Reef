@@ -26,7 +26,6 @@ data:extend({
   },
 
   -- Rare crystalline energy substrate found in alien ship cores.
-  -- Full tech tree comes in Phase 3; defined here because it drops from Phase 2 crushing.
   {
     type      = "item",
     name      = "dilithium-crystal",
@@ -35,5 +34,28 @@ data:extend({
     subgroup  = "space-material",
     order     = "e[starship-scrap]-c[dilithium]",
     stack_size = 50,
+  },
+
+  -- Dilithium Fuel Cell: powers Tier 1 Dilithium Reactors. Produced in the Basic PMR.
+  {
+    type      = "item",
+    name      = "dilithium-fuel-cell",
+    icon      = "__space-age__/graphics/icons/promethium-asteroid-chunk.png",
+    icon_size = 64,
+    subgroup  = "space-material",
+    order     = "e[starship-scrap]-d[fuel-cell]",
+    stack_size = 50,
+  },
+
+  -- Basic PMR: the Probabilistic Matter Recombinator (buildable item).
+  {
+    type         = "item",
+    name         = "basic-pmr",
+    icon         = "__space-age__/graphics/icons/shattered-planet.png",
+    icon_size    = 64,
+    subgroup     = "production-machine",
+    order        = "z[pmr]-a",
+    stack_size   = 50,
+    place_result = "basic-pmr",
   },
 })

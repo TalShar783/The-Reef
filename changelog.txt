@@ -13,3 +13,10 @@ Date: 2026-06-27
     - Phase 2: Recycler recipe (scrap → misc outputs)
     - Phase 2: Scrap chunks added to approach corridor and orbital spawn pools
     - Phase 2: Discovery technology now unlocks both processing recipes
+    - Phase 3: Basic PMR entity (placeholder graphics, assembling-machine-1 base)
+    - Phase 3: PMR recipe category (the-reef-pmr)
+    - Phase 3: 3 test PMR recipes (green circuits, grenades, piercing magazines)
+    - Phase 3: Dilithium Fuel Cell item and recipe (in the PMR)
+    - Phase 3: Basic PMR technology (gated behind Reef discovery)
+    - Phase 3: Ithaca space-location and The Reef -> Ithaca connection
+    - Phase 3: Ithaca discovery technology (gated behind Basic PMR)
