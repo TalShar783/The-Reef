@@ -16,8 +16,8 @@ PlanetsLib:extend({
     order             = "e[the-reef]-b[ithaca]",
     orbit = {
       parent      = { type = "space-location", name = "star" },
-      distance    = 13.5,
-      orientation = 0.590,
+      distance    = 16.5,
+      orientation = 0.40,
     },
     draw_orbit               = false,
     magnitude                = 0.2,

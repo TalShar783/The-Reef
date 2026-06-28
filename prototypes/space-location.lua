@@ -1,7 +1,8 @@
 local asteroid_util = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")
 
--- Positioned between Fulgora and Aquilo, slightly off the main corridor.
--- Distance and orientation are tunable — adjust until starmap placement feels right.
+-- Positioned just outside Nauvis's orbit (distance 15, orientation 0.275),
+-- angularly between Nauvis and Maraxsis (orientation 0.515).
+-- distance = 16, orientation = 0.40 places it visually between them.
 -- Icon paths are placeholders; replace with final art before release.
 
 PlanetsLib:extend({
@@ -13,11 +14,10 @@ PlanetsLib:extend({
     starmap_icon            = "__space-age__/graphics/icons/shattered-planet.png",
     starmap_icon_size       = 64,
     order                   = "e[the-reef]",
-    -- PlanetsLib requires distance/orientation inside orbit, not at top level.
     orbit = {
       parent      = { type = "space-location", name = "star" },
-      distance    = 13,
-      orientation = 0.575,
+      distance    = 16,
+      orientation = 0.40,
     },
     draw_orbit              = true,
     magnitude               = 0.4,
