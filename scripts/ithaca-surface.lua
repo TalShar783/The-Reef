@@ -137,13 +137,14 @@ local SPAWN_PAD_RADIUS     = 55    -- stay inside the station circle with margin
 
 -- Type weights mirror the orbital spawn_definitions (doubled Nauvis rates + scrap).
 -- Metallic:Carbonic:Oxide ≈ 3:2:1, scrap added at oxide rate.
+-- starship-scrap-chunk excluded until entity registration issue is resolved.
+-- Vanilla asteroid-chunk entities work; our custom one silently fails to register.
 local CHUNK_POOL = {
     { name = "metallic-asteroid-chunk", weight = 6 },
     { name = "carbonic-asteroid-chunk", weight = 4 },
     { name = "oxide-asteroid-chunk",    weight = 2 },
-    { name = "starship-scrap-chunk",    weight = 2 },
 }
-local POOL_TOTAL = 14
+local POOL_TOTAL = 12
 
 local function pick_chunk()
     local roll = math.random() * POOL_TOTAL
@@ -161,11 +162,16 @@ script.on_nth_tick(SPAWN_INTERVAL, function()
 
     local angle = math.random() * 2 * math.pi
     local dist  = math.random() * SPAWN_PAD_RADIUS
-    surface.create_entity({
+    local pos   = {
+        math.floor(dist * math.cos(angle) + 0.5),
+        math.floor(dist * math.sin(angle) + 0.5),
+    }
+    -- pcall so an unknown entity name degrades gracefully instead of crashing
+    local ok, err = pcall(surface.create_entity, surface, {
         name     = pick_chunk(),
-        position = {
-            math.floor(dist * math.cos(angle) + 0.5),
-            math.floor(dist * math.sin(angle) + 0.5),
-        },
+        position = pos,
     })
+    if not ok then
+        log("[The Reef] Ithaca chunk spawn failed: " .. tostring(err))
+    end
 end)
