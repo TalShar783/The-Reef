@@ -1,5 +1,8 @@
 -- control.lua: runtime event handlers entry point
 
+-- Ithaca surface tile generation
+require("scripts.ithaca-surface")
+
 -- Phase 4+: cargo hatch inventory scripting
 -- require("scripts.cargo-hatch")
 

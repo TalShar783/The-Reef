@@ -26,8 +26,14 @@ PlanetsLib:extend({
     label_orientation        = 0.25,
     asteroid_spawn_influence = 0.2,
 
-    -- Borrow Fulgora's map gen as a placeholder surface.
-    map_gen_settings = table.deepcopy(data.raw["planet"]["fulgora"].map_gen_settings),
+    -- Minimal map gen — on_chunk_generated in control.lua handles actual tile placement.
+    -- empty-space everywhere outside the station radius, space-platform-foundation inside.
+    map_gen_settings = {
+      default_enable_all_autoplace_controls = false,
+      autoplace_controls = {},
+      cliff_settings = { cliff_elevation_0 = 1024 },
+      property_expression_names = { elevation = "-10" },
+    },
 
     surface_properties = {
       ["day-night-cycle"]  = 0,     -- no day/night — it's a station
