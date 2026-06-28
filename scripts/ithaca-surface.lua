@@ -195,8 +195,8 @@ script.on_event(defines.events.on_chunk_generated, function(event)
                 -- Only trigger when island centre falls in this chunk
                 if ix >= area.left_top.x and ix < area.right_bottom.x
                 and iy >= area.left_top.y and iy < area.right_bottom.y then
-                    -- Fill the island area with deposit tiles
-                    local dep_r  = math.max(1, island.r - 1)
+                    -- Fill the island area, staying 2 tiles from the edge
+                    local dep_r  = math.max(0, island.r - 2)
                     local dep_r2 = dep_r * dep_r
                     for dx = -dep_r, dep_r do
                         for dy = -dep_r, dep_r do
@@ -220,8 +220,9 @@ script.on_event(defines.events.on_chunk_generated, function(event)
 end)
 
 -- ─── Tile restoration ────────────────────────────────────────────────────────
--- When island foundation tiles are mined, restore to empty-space.
--- Main station tiles: let the natural surface tile show through (user-intended).
+-- Any mined/deconstructed space-platform-foundation on Ithaca becomes empty-space.
+-- Fulgoran-machinery was requested but has sprite_usage_surface="fulgora" and
+-- cannot render on non-Fulgora surfaces. empty-space (void) is the best alternative.
 
 local function restore_tiles(surface_index, tiles)
     local surface = game.surfaces[surface_index]
@@ -229,18 +230,23 @@ local function restore_tiles(surface_index, tiles)
     local replacements = {}
     for _, t in ipairs(tiles) do
         if t.old_tile and t.old_tile.name == "space-platform-foundation" then
-            local x, y = t.position.x, t.position.y
-            local dist  = math.sqrt(x * x + y * y)
-            -- Only restore island tiles; main station shows natural tile underneath
-            if dist > STATION_RADIUS + EDGE_RAGGEDNESS + 5 then
-                replacements[#replacements + 1] = { name = "empty-space", position = t.position }
-            end
+            replacements[#replacements + 1] = { name = "empty-space", position = t.position }
         end
     end
     if #replacements > 0 then
         surface.set_tiles(replacements)
     end
 end
+
+-- ─── Nuclear decorative cleanup ──────────────────────────────────────────────
+-- Atomic bombs place nuclear-ground-patch decoratives (not tile replacement).
+-- Clear them from Ithaca every second so they don't persist on the station.
+
+script.on_nth_tick(60, function()
+    local surface = game.surfaces["ithaca"]
+    if not (surface and surface.valid) then return end
+    surface.destroy_decoratives({ name = "nuclear-ground-patch" })
+end)
 
 script.on_event(defines.events.on_player_mined_tile, function(event)
     restore_tiles(event.surface_index, event.tiles)
