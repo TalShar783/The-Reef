@@ -6,7 +6,7 @@ data:extend({
   {
     type      = "technology",
     name      = "the-reef-dilithium-reactor-1",
-    icon      = "__space-age__/graphics/icons/nuclear-reactor.png",
+    icon      = "__base__/graphics/icons/nuclear-reactor.png",
     icon_size = 64,
     prerequisites = { "the-reef-dilithium-science" },
     unit = {

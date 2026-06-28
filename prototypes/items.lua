@@ -70,7 +70,7 @@ data:extend({
   {
     type         = "item",
     name         = "dilithium-reactor-1",
-    icon         = "__space-age__/graphics/icons/nuclear-reactor.png",
+    icon         = "__base__/graphics/icons/nuclear-reactor.png",
     icon_size    = 64,
     subgroup     = "production-machine",
     order        = "z[reactor]-a",
