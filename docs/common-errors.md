@@ -140,6 +140,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Wrong mod prefix on icon paths (__space-age__ vs __base__)
+
+**Wrong:** `"__space-age__/graphics/icons/nuclear-reactor.png"`
+**Correct:** `"__base__/graphics/icons/nuclear-reactor.png"`
+**Source:** Factorio loader error during The Reef Phase 4
+**Note:** `__base__` contains all pre-Space-Age content (nuclear reactor, assembling machines, inserters, vanilla science packs, etc.). `__space-age__` contains only Space Age additions (planets, asteroid chunks, space platform, EM/cryogenic/agricultural science packs, etc.). When guessing an icon path, check which expansion the entity belongs to before choosing the prefix. File-not-found errors are the only feedback — the loader does not suggest the correct path.
+
+---
+
 ### Using `fuel_category` instead of `fuel_categories` on burner energy sources
 
 **Wrong:** `energy_source = { type = "burner", fuel_category = "dilithium-fuel", ... }`
