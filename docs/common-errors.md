@@ -140,6 +140,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Guessing unknown names, paths, or API fields
+
+**Wrong:** Guessing a prototype field name, entity name, icon path, particle name, inventory define, or any other identifier not confirmed in source material or the skill docs
+**Correct:** Stop and ask the user what to do — do not guess
+**Source:** Standing instruction from The Reef developer
+**Note:** Guessed names produce silent failures (entity not registered, wrong icon path, wrong field silently ignored) that are hard to diagnose. Examples of errors caused by guessing: `promethium-science.png` (correct: `promethium-science-pack.png`), `nuclear-reactor.png` in `__space-age__` (correct: `__base__`), `metallic-asteroid-chunk-particle-medium` assumed to exist (happened to be correct but was a guess). When a name cannot be confirmed from source material, the lua files, or the prototype cheatsheet — ask before writing code.
+
+---
+
 ### Wrong mod prefix on icon paths (__space-age__ vs __base__)
 
 **Wrong:** `"__space-age__/graphics/icons/nuclear-reactor.png"`
