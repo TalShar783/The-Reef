@@ -127,13 +127,6 @@ local function on_chunk_generated(event)
     local exclusion_r = STATION_RADIUS + EDGE_RAGGEDNESS + ISLAND_EXCLUSION
 
     -- ── Tile placement ────────────────────────────────────────────────────────
-    -- The main station pad gets a stone-path base tile placed FIRST.
-    -- space-platform-foundation then goes on top (higher layer = 15).
-    -- When foundation is mined, stone-path shows through naturally.
-    -- Note: swap "stone-path" for "volcanic-jagged-ground" if you want the
-    -- Vulcanus rock look — test first as it has sprite_usage_surface="vulcanus".
-    local base_tiles = {}
-
     for x = area.left_top.x, area.right_bottom.x - 1 do
         for y = area.left_top.y, area.right_bottom.y - 1 do
             local name
@@ -141,8 +134,6 @@ local function on_chunk_generated(event)
             local effective_r = STATION_RADIUS + edge_noise(x, y)
 
             if dist <= effective_r then
-                -- Lay protective base first, foundation goes on top
-                base_tiles[#base_tiles + 1] = { name = "stone-path", position = { x, y } }
                 name = "space-platform-foundation"
             elseif dist > exclusion_r and is_island(x, y) then
                 name = "space-platform-foundation"
@@ -154,8 +145,6 @@ local function on_chunk_generated(event)
         end
     end
 
-    -- Place base layer first, then cover with foundation
-    if #base_tiles > 0 then surface.set_tiles(base_tiles) end
     surface.set_tiles(tiles)
 
     -- ── Ore deposit placement ─────────────────────────────────────────────────
@@ -203,9 +192,11 @@ local function restore_tiles(surface_index, tiles)
         if t.old_tile and t.old_tile.name == "space-platform-foundation" then
             local x, y = t.position.x, t.position.y
             local dist = math.sqrt(x * x + y * y)
-            -- Main station: stone-path underlayer already reveals naturally, skip.
-            -- Island tiles have no underlayer, so restore explicitly to empty-space.
-            if dist > STATION_RADIUS + EDGE_RAGGEDNESS + 5 then
+            if dist <= STATION_RADIUS + EDGE_RAGGEDNESS + 5 then
+                -- Main station pad: reveal volcanic rock when foundation is removed
+                replacements[#replacements + 1] = { name = "volcanic-jagged-ground", position = t.position }
+            else
+                -- Islands and edges: restore to void
                 replacements[#replacements + 1] = { name = "empty-space", position = t.position }
             end
         end
