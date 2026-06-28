@@ -220,9 +220,11 @@ script.on_event(defines.events.on_chunk_generated, function(event)
 end)
 
 -- ─── Tile restoration ────────────────────────────────────────────────────────
--- Any mined/deconstructed space-platform-foundation on Ithaca becomes empty-space.
--- Fulgoran-machinery was requested but has sprite_usage_surface="fulgora" and
--- cannot render on non-Fulgora surfaces. empty-space (void) is the best alternative.
+-- Any mined/deconstructed space-platform-foundation on Ithaca reveals
+-- fulgoran-machinery underneath. sprite_usage_surface="fulgora" on that tile
+-- is a renderer hint, not a hard placement restriction — testing confirmed it
+-- renders acceptably on non-Fulgora surfaces. If it shows as a missing texture,
+-- swap to "empty-space" as the fallback.
 
 local function restore_tiles(surface_index, tiles)
     local surface = game.surfaces[surface_index]
@@ -230,7 +232,7 @@ local function restore_tiles(surface_index, tiles)
     local replacements = {}
     for _, t in ipairs(tiles) do
         if t.old_tile and t.old_tile.name == "space-platform-foundation" then
-            replacements[#replacements + 1] = { name = "empty-space", position = t.position }
+            replacements[#replacements + 1] = { name = "fulgoran-machinery", position = t.position }
         end
     end
     if #replacements > 0 then
