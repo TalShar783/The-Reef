@@ -113,6 +113,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Duplicate section headers in locale files
+
+**Wrong:** Multiple `[item-name]` (or any) sections in the same `.cfg` file
+**Correct:** Each section header (`[item-name]`, `[entity-name]`, etc.) must appear exactly once; add all keys for that section under the single header
+**Source:** Factorio locale loader error during The Reef Phase 3 load: "Duplicate key in property tree at ROOT"
+**Note:** Unlike Lua tables, Factorio's locale parser treats duplicate section headers as a fatal error. Consolidate all keys for a given category under one header per file.
+
+---
+
 ### Wrong prerequisite name for Fulgora discovery technology
 
 **Wrong:** `prerequisites = { "fulgora-visitation" }`
@@ -137,6 +146,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 **Correct:** Always include `orbit = { parent = { type = "space-location", name = "star" }, distance = N, orientation = N }` even for non-satellite primary locations. Do NOT also set `distance`/`orientation` at the top level — PlanetsLib explicitly rejects that pattern.
 **Source:** PlanetsLib `lib/planet.lua:54` — `verify_extend_fields` enforces this during The Reef Phase 1 load
 **Note:** PlanetsLib:extend() requires `orbit` unconditionally; data:extend() does not. Any mod using PlanetsLib must include it even when the location is not a satellite of another body.
+
+---
+
+### Using planet-format spawn definitions on a space-connection
+
+**Wrong:** `asteroid_util.spawn_definitions(route, 0.4)` (with position arg) in a `space-connection` prototype
+**Correct:** `asteroid_util.spawn_definitions(route)` (no second arg) for connections; custom entries must use `spawn_points = [{distance, probability, speed, angle_when_stopped}]`
+**Source:** Factorio loader error during The Reef Phase 3: "Key 'spawn_points' not found at space-connection.asteroid_spawn_definitions[0]"
+**Note:** `spawn_definitions` returns two different shapes depending on the second argument. No arg → route format with `spawn_points` arrays (required by `space-connection`). With a position float → planet format with flat `probability`/`speed` fields (required by `planet`/`space-location`). Using the wrong format crashes at load.
 
 ---
 

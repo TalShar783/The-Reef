@@ -43,16 +43,18 @@ data:extend({
     to       = "ithaca",
     order    = "e[the-reef]-b[ithaca]",
     length   = 3000,
-    -- Approach to Ithaca is mostly clear; the station maintains navigational lanes.
+    -- space-connection needs route format: spawn_definitions with NO second arg,
+    -- returning entries with spawn_points arrays (not flat probability fields).
     asteroid_spawn_definitions = (function()
-      local spawns = asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo, 0.4)
-      -- Light scrap chunk presence — debris drifts into the lane from The Reef
+      local spawns = asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo)
+      -- Light scrap chunk presence in the lane — route format requires spawn_points.
       table.insert(spawns, {
-        asteroid          = "starship-scrap-chunk",
-        type              = "asteroid-chunk",
-        probability       = 0.01,
-        speed             = asteroid_util.standard_speed,
-        angle_when_stopped = 1,
+        asteroid = "starship-scrap-chunk",
+        type     = "asteroid-chunk",
+        spawn_points = {
+          { distance = 0.0, probability = 0.000, speed = asteroid_util.standard_speed, angle_when_stopped = 1 },
+          { distance = 1.0, probability = 0.005, speed = asteroid_util.standard_speed, angle_when_stopped = 1 },
+        },
       })
       return spawns
     end)(),
