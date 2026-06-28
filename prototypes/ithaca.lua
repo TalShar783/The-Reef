@@ -35,14 +35,13 @@ PlanetsLib:extend({
       property_expression_names = { elevation = "-10" },
     },
 
-    surface_properties = {
-      ["day-night-cycle"]  = 0,     -- no day/night — it's a station
-      ["magnetic-field"]   = 10,
-      ["solar-power"]      = 75,
-      pressure             = 0,     -- vacuum
-      gravity              = 2,     -- very low gravity
-      temperature          = -150,
-    },
+    -- Match Nauvis surface conditions so all Nauvis-buildable entities are
+    -- also buildable on Ithaca. Nauvis only explicitly sets day-night-cycle;
+    -- all other properties use engine defaults (gravity=10, pressure=1000,
+    -- magnetic-field=90, solar-power=100).
+    surface_properties = table.deepcopy(
+      data.raw["planet"]["nauvis"].surface_properties or {}
+    ),
 
     -- Reuse Fulgora's procession catalogue for the landing/departure cinematic.
     -- Replace with a custom Ithaca sequence before release.
