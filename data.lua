@@ -16,5 +16,9 @@ require("prototypes.entities")
 require("prototypes.ithaca")
 require("prototypes.technologies.the-reef-basic-pmr")
 
+-- Phase 4: Dilithium Science Pack + Reactor T1
+require("prototypes.technologies.the-reef-dilithium-science")
+require("prototypes.technologies.the-reef-dilithium-reactor")
+
 -- Phase 4+: structures
 -- require("prototypes.entities")

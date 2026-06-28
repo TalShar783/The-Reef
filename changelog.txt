@@ -20,3 +20,8 @@ Date: 2026-06-27
     - Phase 3: Basic PMR technology (gated behind Reef discovery)
     - Phase 3: Ithaca space-location and The Reef -> Ithaca connection
     - Phase 3: Ithaca discovery technology (gated behind Basic PMR)
+    - Phase 4: dilithium-fuel fuel category; Dilithium Fuel Cells gain fuel_value 2GJ
+    - Phase 4: Dilithium Science Pack (type=tool, produced in PMR)
+    - Phase 4: Dilithium Reactor T1 entity (reactor deepcopy, dilithium-fuel, 20MW)
+    - Phase 4: dilithium-science technology (gates Dilithium Era)
+    - Phase 4: dilithium-reactor-1 technology (costs dilithium science packs)

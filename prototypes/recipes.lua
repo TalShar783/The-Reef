@@ -123,6 +123,49 @@ data:extend({
     },
   },
 
+  -- Dilithium Science Pack — produced in the PMR from reef materials.
+  -- 2 crystals + 2 scrap → 2 packs in 10 seconds.
+  {
+    type     = "recipe",
+    name     = "dilithium-science-pack",
+    icon     = "__space-age__/graphics/icons/promethium-science.png",
+    icon_size = 64,
+    category = "the-reef-pmr",
+    order    = "z[pmr]-e",
+    enabled  = false,
+    energy_required = 10,
+    ingredients = {
+      { type = "item", name = "dilithium-crystal", amount = 2 },
+      { type = "item", name = "starship-scrap",    amount = 2 },
+    },
+    results = {
+      { type = "item", name = "dilithium-science-pack", amount = 2 },
+    },
+  },
+
+  -- Dilithium Reactor T1 (building recipe) — crafted in an assembling machine.
+  -- Costs more than the PMR; it's an advanced power structure.
+  {
+    type     = "recipe",
+    name     = "dilithium-reactor-1",
+    icon     = "__space-age__/graphics/icons/nuclear-reactor.png",
+    icon_size = 64,
+    category = "crafting",
+    subgroup = "production-machine",
+    order    = "z[reactor]-a",
+    enabled  = false,
+    energy_required = 30,
+    ingredients = {
+      { type = "item", name = "steel-plate",         amount = 30 },
+      { type = "item", name = "advanced-circuit",    amount = 20 },
+      { type = "item", name = "dilithium-crystal",   amount = 5  },
+      { type = "item", name = "copper-plate",        amount = 20 },
+    },
+    results = {
+      { type = "item", name = "dilithium-reactor-1", amount = 1 },
+    },
+  },
+
   -- Basic PMR (building recipe) — crafted in an assembling machine.
   {
     type     = "recipe",
