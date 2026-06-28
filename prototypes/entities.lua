@@ -52,7 +52,7 @@ reactor.neighbour_bonus   = 0        -- no adjacency bonus (it's not a nuclear a
 -- Override fuel category to dilithium-fuel only
 reactor.energy_source = {
   type                    = "burner",
-  fuel_category           = "dilithium-fuel",
+  fuel_categories         = { "dilithium-fuel" },
   effectivity             = 1,
   fuel_inventory_size     = 1,
   burnt_inventory_size    = 1,

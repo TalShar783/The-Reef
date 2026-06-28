@@ -140,6 +140,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Using `fuel_category` instead of `fuel_categories` on burner energy sources
+
+**Wrong:** `energy_source = { type = "burner", fuel_category = "dilithium-fuel", ... }`
+**Correct:** `energy_source = { type = "burner", fuel_categories = { "dilithium-fuel" }, ... }`
+**Source:** Factorio loader error during The Reef Phase 4: "'fuel_category' is no longer supported. Please use 'fuel_categories' instead"
+**Note:** In Factorio 2.x, `fuel_category` was replaced by `fuel_categories` (an array). The singular form silently worked in 1.x but is a hard error in 2.x.
+
+---
+
 ### Wrong prerequisite name for Fulgora discovery technology
 
 **Wrong:** `prerequisites = { "fulgora-visitation" }`
