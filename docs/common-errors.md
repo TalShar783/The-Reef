@@ -122,6 +122,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Changing a space-location to a planet while a platform is parked there
+
+**Wrong:** Changing `type = "space-location"` to `type = "planet"` on an existing location while a save has a platform docked there
+**Correct:** Start a fresh save after making the type change, or remove the platform from the location before making the change
+**Source:** Factorio crash during The Reef development — `SpacePlatform.cpp:1048`: orbital logistics consistency check fails because the save's platform state was serialized against a space-location but is now being validated against a planet
+**Note:** Platforms parked at space-locations are managed differently from those in orbit around planets. Changing the type mid-save corrupts the platform's registered state and causes an assert crash on load.
+
+---
+
 ### Duplicate section headers in locale files
 
 **Wrong:** Multiple `[item-name]` (or any) sections in the same `.cfg` file
