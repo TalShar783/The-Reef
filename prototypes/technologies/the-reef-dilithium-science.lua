@@ -6,7 +6,7 @@ data:extend({
   {
     type      = "technology",
     name      = "the-reef-dilithium-science",
-    icon      = "__space-age__/graphics/icons/promethium-science.png",
+    icon      = "__space-age__/graphics/icons/promethium-science-pack.png",
     icon_size = 64,
     prerequisites = { "the-reef-basic-pmr" },
     unit = {

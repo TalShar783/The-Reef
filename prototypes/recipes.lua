@@ -128,7 +128,7 @@ data:extend({
   {
     type     = "recipe",
     name     = "dilithium-science-pack",
-    icon     = "__space-age__/graphics/icons/promethium-science.png",
+    icon     = "__space-age__/graphics/icons/promethium-science-pack.png",
     icon_size = 64,
     category = "the-reef-pmr",
     order    = "z[pmr]-e",

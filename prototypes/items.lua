@@ -57,7 +57,7 @@ data:extend({
   {
     type      = "tool",
     name      = "dilithium-science-pack",
-    icon      = "__space-age__/graphics/icons/promethium-science.png",
+    icon      = "__space-age__/graphics/icons/promethium-science-pack.png",
     icon_size = 64,
     subgroup  = "science-pack",
     order     = "z[dilithium]",
