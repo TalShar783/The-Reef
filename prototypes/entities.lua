@@ -59,6 +59,27 @@ reactor.energy_usage      = "0kW"
 
 data:extend({ reactor })
 
+-- Ithaca Scrap Deposit — resource nodes on the scattered island fragments.
+-- Deepcopy of iron-ore inherits all required stage/sprite/collision fields.
+-- Produces starship-scrap when mined by electric mining drills.
+-- Placeholder appearance: iron-ore sprites. Replace with custom art before release.
+
+local scrap_deposit = table.deepcopy(data.raw["resource"]["iron-ore"])
+scrap_deposit.name          = "ithaca-scrap-deposit"
+scrap_deposit.icon          = "__space-age__/graphics/icons/metallic-asteroid-chunk.png"
+scrap_deposit.icon_size     = 64
+scrap_deposit.map_color     = { r = 0.6, g = 0.5, b = 0.4 }
+scrap_deposit.minable       = {
+    mining_time = 1,
+    result      = "starship-scrap",
+    count       = 1,
+}
+scrap_deposit.infinite      = false
+scrap_deposit.subgroup      = "the-reef-materials"
+scrap_deposit.order         = "z[scrap-deposit]"
+
+data:extend({ scrap_deposit })
+
 -- Cargo Hatch (basic)
 -- A 1-slot container that syncs with the platform cargo hub.
 -- inventory_size = 1 enforces the single-stack buffer at the entity level.
