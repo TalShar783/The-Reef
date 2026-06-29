@@ -213,6 +213,20 @@ asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo, 0.9)
 
 > **Source limitation:** No `type = "recipe"` prototype definition body appears in the source material. Field names cannot be confirmed.
 
+### Collision box sizing for custom entities
+
+Factorio uses closed interval collision detection — two entities whose boxes share an exact boundary cannot be placed adjacent to each other. The standard convention is to inset the collision box by 0.1 tiles relative to the full tile footprint:
+
+| Entity footprint | Correct collision_box | Wrong (flush) |
+|---|---|---|
+| 1×1 | `{{-0.4, -0.4}, {0.4, 0.4}}` | `{{-0.5, -0.5}, {0.5, 0.5}}` |
+| 2×2 | `{{-0.9, -0.9}, {0.9, 0.9}}` | `{{-1, -1}, {1, 1}}` |
+| 3×3 | `{{-1.4, -1.4}, {1.4, 1.4}}` | `{{-1.5, -1.5}, {1.5, 1.5}}` |
+
+The `selection_box` (what the player clicks) can be flush — only `collision_box` needs the inset.
+
+---
+
 ### Subgroup guidance (confirmed from live testing)
 
 The `subgroup` field on a recipe must match a defined `item-subgroup` prototype. **Prefer omitting it** — Factorio then inherits the subgroup from the primary result item, which is always valid.
