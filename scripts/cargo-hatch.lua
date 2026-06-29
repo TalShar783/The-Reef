@@ -73,7 +73,7 @@ function M.on_pre_build(event)
     if count >= limit then
         player.play_sound({ path = "utility/cannot_build" })
         surface.create_entity({
-            type     = "flying-text",
+            name     = "flying-text",
             position = event.position,
             text     = { "cargo-hatch.limit-reached", count, limit },
             color    = { r = 1, g = 0.5, b = 0.5 },
