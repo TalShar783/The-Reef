@@ -49,4 +49,30 @@ data:extend({
     },
     -- No data-stage effects; the limit is tracked and enforced by script.
   },
+
+  -- Repeatable upgrade: each level extends the maximum placement distance from the
+  -- platform hub by RANGE_PER_LEVEL tiles. Enforced by script at placement time.
+  -- Cost scales with level: 300 * L packs per level.
+  {
+    type          = "technology",
+    name          = "the-reef-cargo-hatch-range",
+    icon          = "__base__/graphics/icons/iron-chest.png",
+    icon_size     = 64,
+    upgrade       = true,
+    max_level     = "infinite",
+    prerequisites = { "the-reef-cargo-hatch" },
+    unit = {
+      count_formula = "300*L",
+      ingredients = {
+        { "automation-science-pack",       1 },
+        { "logistic-science-pack",         1 },
+        { "chemical-science-pack",         1 },
+        { "space-science-pack",            1 },
+        { "electromagnetic-science-pack",  1 },
+        { "dilithium-science-pack",        1 },
+      },
+      time = 60,
+    },
+    -- No data-stage effects; range is tracked and enforced by script.
+  },
 })

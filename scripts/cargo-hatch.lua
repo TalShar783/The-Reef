@@ -9,8 +9,10 @@
 --   Researching the-reef-cargo-hatch-capacity adds 1 per level.
 --   Limits are per-platform automatically (each platform = separate surface).
 
-local SYNC_INTERVAL = 30
-local BASE_LIMIT    = 1   -- hatches per platform when first unlocked
+local SYNC_INTERVAL  = 30
+local BASE_LIMIT     = 1   -- hatches per platform when first unlocked
+local BASE_RANGE     = 20  -- max tiles from hub when first unlocked
+local RANGE_PER_LEVEL = 5  -- tiles added per range research level
 
 local M = {}
 
@@ -20,6 +22,7 @@ function M.on_init()
     storage.hatches                    = {}
     storage.hatch_gui                  = {}
     storage.cargo_hatch_extra_capacity = {}  -- [force_index] = extra slots from research
+    storage.cargo_hatch_extra_range    = {}  -- [force_index] = extra tiles from research
 end
 
 -- ─── Limit helpers ───────────────────────────────────────────────────────────
@@ -30,8 +33,25 @@ local function get_limit(force)
     return BASE_LIMIT + extra
 end
 
+local function get_range(force)
+    local extra = storage.cargo_hatch_extra_range
+                  and storage.cargo_hatch_extra_range[force.index] or 0
+    return BASE_RANGE + extra
+end
+
 local function get_platform_hatch_count(surface)
     return #surface.find_entities_filtered({ name = "cargo-hatch" })
+end
+
+local function get_hub(surface)
+    local hubs = surface.find_entities_filtered({ type = "space-platform-hub" })
+    return hubs[1]
+end
+
+local function tile_distance(pos1, pos2)
+    local dx = pos1.x - pos2.x
+    local dy = pos1.y - pos2.y
+    return math.sqrt(dx * dx + dy * dy)
 end
 
 -- ─── Registration ────────────────────────────────────────────────────────────
@@ -67,9 +87,24 @@ function M.on_pre_build(event)
     local surface = player.surface
     if not surface.platform then return end
 
+    local hub = get_hub(surface)
+    if hub then
+        local range = get_range(player.force)
+        local dist  = tile_distance(event.position, hub.position)
+        if dist > range then
+            player.play_sound({ path = "utility/cannot_build" })
+            player.create_local_flying_text({
+                position     = event.position,
+                text         = { "cargo-hatch.range-exceeded", math.floor(dist), range },
+                color        = { r = 1, g = 0.5, b = 0.5 },
+                time_to_live = 120,
+            })
+            return
+        end
+    end
+
     local limit = get_limit(player.force)
     local count = get_platform_hatch_count(surface)
-    -- count is BEFORE this placement, so >= limit means it would be exceeded
     if count >= limit then
         player.play_sound({ path = "utility/cannot_build" })
         player.create_local_flying_text({
@@ -81,31 +116,43 @@ function M.on_pre_build(event)
     end
 end
 
+local function refund_hatch(event, surface, pos)
+    if event.player_index then
+        game.players[event.player_index].insert({ name = "cargo-hatch", count = 1 })
+    else
+        surface.spill_item_stack({
+            position                      = pos,
+            stack                         = { name = "cargo-hatch", count = 1 },
+            enable_looted                 = false,
+            allow_belts                   = false,
+            use_start_position_on_failure = true,
+        })
+    end
+end
+
 function M.on_built(event)
     local entity = event.entity or event.created_entity
     if not entity or entity.name ~= "cargo-hatch" then return end
 
     local surface = entity.surface
     if surface.platform then
+        local pos = entity.position
+
+        local hub = get_hub(surface)
+        if hub then
+            local range = get_range(entity.force)
+            if tile_distance(pos, hub.position) > range then
+                entity.destroy({ raise_destroy = false })
+                refund_hatch(event, surface, pos)
+                return
+            end
+        end
+
         local limit = get_limit(entity.force)
         local count = get_platform_hatch_count(surface)
-        -- count includes the newly placed entity
         if count > limit then
-            local pos = entity.position
-            -- Destroy silently (dying_explosion and corpse are nil on prototype)
             entity.destroy({ raise_destroy = false })
-
-            if event.player_index then
-                game.players[event.player_index].insert({ name = "cargo-hatch", count = 1 })
-            else
-                surface.spill_item_stack({
-                    position                      = pos,
-                    stack                         = { name = "cargo-hatch", count = 1 },
-                    enable_looted                 = false,
-                    allow_belts                   = false,
-                    use_start_position_on_failure = true,
-                })
-            end
+            refund_hatch(event, surface, pos)
             return
         end
     end
@@ -121,10 +168,15 @@ end
 -- ─── Research handler ────────────────────────────────────────────────────────
 
 function M.on_research_finished(event)
-    if event.research.name ~= "the-reef-cargo-hatch-capacity" then return end
-    storage.cargo_hatch_extra_capacity = storage.cargo_hatch_extra_capacity or {}
-    local fi = event.research.force.index
-    storage.cargo_hatch_extra_capacity[fi] = (storage.cargo_hatch_extra_capacity[fi] or 0) + 1
+    local name = event.research.name
+    local fi   = event.research.force.index
+    if name == "the-reef-cargo-hatch-capacity" then
+        storage.cargo_hatch_extra_capacity = storage.cargo_hatch_extra_capacity or {}
+        storage.cargo_hatch_extra_capacity[fi] = (storage.cargo_hatch_extra_capacity[fi] or 0) + 1
+    elseif name == "the-reef-cargo-hatch-range" then
+        storage.cargo_hatch_extra_range = storage.cargo_hatch_extra_range or {}
+        storage.cargo_hatch_extra_range[fi] = (storage.cargo_hatch_extra_range[fi] or 0) + RANGE_PER_LEVEL
+    end
 end
 
 -- ─── Platform cargo inventory ────────────────────────────────────────────────
@@ -214,7 +266,7 @@ local function build_gui(player, data)
         },
     })
 
-    -- Capacity display (only on space platforms)
+    -- Capacity and range display (only on space platforms)
     local surface = data.entity.surface
     if surface.platform then
         local limit = get_limit(data.entity.force)
@@ -223,6 +275,15 @@ local function build_gui(player, data)
         cap_row.add({
             type    = "label",
             caption = { "cargo-hatch-gui.capacity", count, limit },
+        })
+
+        local hub   = get_hub(surface)
+        local range = get_range(data.entity.force)
+        local dist  = hub and math.floor(tile_distance(data.entity.position, hub.position)) or 0
+        local rng_row = frame.add({ type = "flow", direction = "horizontal" })
+        rng_row.add({
+            type    = "label",
+            caption = { "cargo-hatch-gui.range", dist, range },
         })
     end
 

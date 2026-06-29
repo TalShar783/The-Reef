@@ -215,6 +215,33 @@ when using relative GUIs.
 
 ---
 
+### `probability` on recipe result products renamed to `independent_probability` (2.1 breaking change)
+
+**Wrong:** `{ type = "item", name = "dilithium-crystal", amount = 1, probability = 0.03 }`
+**Correct:** `{ type = "item", name = "dilithium-crystal", amount = 1, independent_probability = 0.03 }`
+**Source:** Factorio loader error during The Reef 2.1 migration: "'probability' property on a product prototype was renamed into 'independent_probability'. Please update."
+**Note:** Affects all recipe `results` entries that use chance-based output. Straight rename — no semantic change.
+
+---
+
+### `recycling-or-hand-crafting` category removed in 2.1
+
+**Wrong:** `categories = { "recycling-or-hand-crafting" }`
+**Correct:** `categories = { "recycling", "hand-crafting" }`
+**Source:** Factorio loader error during The Reef 2.1 migration: "recipe-category with name 'recycling-or-hand-crafting' does not exist"
+**Note:** The combined category was split into two separate entries in the `categories` array. Confirmed from `space-age/prototypes/recipe.lua:2131` (scrap-recycling recipe).
+
+---
+
+### Using `category` instead of `categories` on recipe prototypes (2.1 breaking change)
+
+**Wrong:** `category = "crushing"`
+**Correct:** `categories = { "crushing" }`
+**Source:** Factorio loader error during The Reef 2.1 migration: "In RecipePrototype, `category` and `additional_categories` got merged into `categories` table. Please use that instead."
+**Note:** In Factorio 2.1, `category` (string) and `additional_categories` (array) on recipe prototypes were merged into a single `categories` array. All recipes must be updated — a single `category` string is now a hard error.
+
+---
+
 ### Using `fuel_category` instead of `fuel_categories` on burner energy sources
 
 **Wrong:** `energy_source = { type = "burner", fuel_category = "dilithium-fuel", ... }`

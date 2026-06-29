@@ -85,6 +85,34 @@ tail -f "C:/Users/nacus/AppData/Roaming/Factorio/factorio-current.log" | grep --
 ```
 Use `persistent = true`. This catches errors the moment they happen without needing the user to paste them.
 
+## Space Platform Mechanics — Do Not Apply Surface Rules Here
+
+Space platforms are a fundamentally different environment from planet surfaces. Before designing or reasoning about anything platform-related, apply these rules:
+
+**What does NOT exist on space platforms:**
+- Roboports, construction/logistic robots, logistic networks — none of these can be placed on platforms. There is no logistic network on a platform at all.
+- Vanilla chests (wooden, iron, steel, all logistic chest variants) — Space Age data-updates adds a gravity > 0.1 condition to all of them, blocking placement on platforms (gravity = 0). Any container placed on a platform must explicitly set `surface_conditions` to allow gravity = 0.
+- Cargo rockets and cargo pods — these travel between a platform and a planet surface only. There is no rocket-based transfer between two platforms.
+
+**How platform inventory actually works:**
+- The `space-platform-hub` entity holds the platform's shared cargo inventory. Everything on the platform is logistically connected through it.
+- Inserters on a platform pull from and push to the hub inventory directly.
+- In 2.1, inserters and machines with "enable logistic connection" wirelessly read the hub's contents (analogous to reading a logistic network on a surface, but the hub replaces the network). This is not the same as logistic chests existing on the platform.
+
+**Platform-to-platform transfer (2.1):**
+- Platforms can request items from other platforms via the orbital request system when they are in orbit of the same body.
+- This is the only mechanism for platform-to-platform item transfer. It does not involve rockets or cargo pods.
+
+**Non-landable space locations (The Reef, Lethe Point, Shattered Planet):**
+- These have no surface. Players cannot land there, build there, or send cargo rockets there.
+- Platforms orbit there and interact with the location's asteroid/resource mechanics from orbit.
+- Lethe Point specifically exists for platform-to-platform exchange using the 2.1 orbital request system. No surface structures, no rockets, no landing pads.
+
+**When designing platform structures for The Reef:**
+- Always check `surface_conditions` — any custom entity that should be platform-placeable needs `gravity = 0` (max = 0).
+- The hub is the inventory source of truth. Scripts that read platform cargo use `surface.find_entities_filtered({ type = "space-platform-hub" })[1].get_inventory(1)`.
+- Do not assume any surface-side logistics mechanic (belts excepted) transfers to platform design.
+
 ## Key Constraints
 
 - Target: Factorio 2.x / Space Age only — no 1.x compatibility shims
