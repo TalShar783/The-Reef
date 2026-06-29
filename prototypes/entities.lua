@@ -94,6 +94,8 @@ hatch.inventory_size    = 1
 hatch.minable           = { mining_time = 0.5, result = "cargo-hatch" }
 hatch.collision_box     = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
 hatch.selection_box     = {{ -1,   -1   }, { 1,   1   }}
+hatch.dying_explosion   = nil   -- suppress poof on silent script-destroy
+hatch.corpse            = nil   -- suppress remnants on silent script-destroy
 hatch.surface_conditions = {
     {
         property = "gravity",

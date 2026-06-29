@@ -56,36 +56,53 @@ local function unregister(entity)
     storage.hatches[entity.unit_number] = nil
 end
 
+-- on_pre_build fires BEFORE the entity is created, giving us the chance to
+-- show the "can't build" sound and flying text exactly where the cursor is —
+-- matching vanilla invalid-surface-condition feedback.
+function M.on_pre_build(event)
+    local player  = game.players[event.player_index]
+    local cursor  = player.cursor_stack
+    if not (cursor and cursor.valid_for_read and cursor.name == "cargo-hatch") then return end
+
+    local surface = player.surface
+    if not surface.platform then return end
+
+    local limit = get_limit(player.force)
+    local count = get_platform_hatch_count(surface)
+    -- count is BEFORE this placement, so >= limit means it would be exceeded
+    if count >= limit then
+        player.play_sound({ path = "utility/cannot_build" })
+        surface.create_entity({
+            type     = "flying-text",
+            position = event.position,
+            text     = { "cargo-hatch.limit-reached", count, limit },
+            color    = { r = 1, g = 0.5, b = 0.5 },
+        })
+    end
+end
+
 function M.on_built(event)
     local entity = event.entity or event.created_entity
     if not entity or entity.name ~= "cargo-hatch" then return end
 
-    -- Enforce per-platform limit on space platforms
     local surface = entity.surface
     if surface.platform then
         local limit = get_limit(entity.force)
         local count = get_platform_hatch_count(surface)
-        -- count includes this newly placed entity
+        -- count includes the newly placed entity
         if count > limit then
-            local pos   = entity.position
-            local force = entity.force
-            entity.destroy()
+            local pos = entity.position
+            -- Destroy silently (dying_explosion and corpse are nil on prototype)
+            entity.destroy({ raise_destroy = false })
 
             if event.player_index then
-                local player = game.players[event.player_index]
-                player.insert({ name = "cargo-hatch", count = 1 })
-                player.print({
-                    "cargo-hatch.limit-reached",
-                    count - 1,   -- current count before this one
-                    limit,
-                })
+                game.players[event.player_index].insert({ name = "cargo-hatch", count = 1 })
             else
-                -- Placed by robot — spill item on ground for pickup
                 surface.spill_item_stack({
-                    position                  = pos,
-                    stack                     = { name = "cargo-hatch", count = 1 },
-                    enable_looted             = false,
-                    allow_belts               = false,
+                    position                      = pos,
+                    stack                         = { name = "cargo-hatch", count = 1 },
+                    enable_looted                 = false,
+                    allow_belts                   = false,
                     use_start_position_on_failure = true,
                 })
             end
