@@ -11,6 +11,8 @@ script.on_init(function()
     storage.ithaca_center_patch_placed = false
 end)
 
+script.on_event(defines.events.on_research_finished, cargo_hatch.on_research_finished)
+
 -- Register / unregister hatches on build and removal.
 -- Event filters mean the handler only fires for cargo-hatch entities.
 local hatch_filter = {{ filter = "name", name = "cargo-hatch" }}

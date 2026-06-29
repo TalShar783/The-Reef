@@ -2,22 +2,36 @@
 --
 -- A 2x2 container that bridges inserters and the platform cargo hub.
 -- The default container GUI shows the 1-slot buffer (current contents).
--- A relative panel (player.gui.relative) shows the configuration controls.
--- Using relative GUI gives us X-button, E/Esc, and vanilla keyboard behaviour
--- for free, without needing to suppress the default entity GUI.
+-- A relative panel (player.gui.relative) shows configuration controls.
 --
--- Extract mode: when buffer is empty, pulls one stack from cargo hub.
--- Insert mode:  drains buffer into cargo hub each sync tick.
+-- Limit system:
+--   Each space platform starts with a limit of BASE_LIMIT hatches.
+--   Researching the-reef-cargo-hatch-capacity adds 1 per level.
+--   Limits are per-platform automatically (each platform = separate surface).
 
 local SYNC_INTERVAL = 30
+local BASE_LIMIT    = 1   -- hatches per platform when first unlocked
 
 local M = {}
 
 -- ─── Storage ─────────────────────────────────────────────────────────────────
 
 function M.on_init()
-    storage.hatches   = {}   -- [unit_number] = {entity, item, mode}
-    storage.hatch_gui = {}   -- [player_index] = unit_number
+    storage.hatches                    = {}
+    storage.hatch_gui                  = {}
+    storage.cargo_hatch_extra_capacity = {}  -- [force_index] = extra slots from research
+end
+
+-- ─── Limit helpers ───────────────────────────────────────────────────────────
+
+local function get_limit(force)
+    local extra = storage.cargo_hatch_extra_capacity
+                  and storage.cargo_hatch_extra_capacity[force.index] or 0
+    return BASE_LIMIT + extra
+end
+
+local function get_platform_hatch_count(surface)
+    return #surface.find_entities_filtered({ name = "cargo-hatch" })
 end
 
 -- ─── Registration ────────────────────────────────────────────────────────────
@@ -44,12 +58,56 @@ end
 
 function M.on_built(event)
     local entity = event.entity or event.created_entity
-    if entity and entity.name == "cargo-hatch" then register(entity) end
+    if not entity or entity.name ~= "cargo-hatch" then return end
+
+    -- Enforce per-platform limit on space platforms
+    local surface = entity.surface
+    if surface.platform then
+        local limit = get_limit(entity.force)
+        local count = get_platform_hatch_count(surface)
+        -- count includes this newly placed entity
+        if count > limit then
+            local pos   = entity.position
+            local force = entity.force
+            entity.destroy()
+
+            if event.player_index then
+                local player = game.players[event.player_index]
+                player.insert({ name = "cargo-hatch", count = 1 })
+                player.print({
+                    "cargo-hatch.limit-reached",
+                    count - 1,   -- current count before this one
+                    limit,
+                })
+            else
+                -- Placed by robot — spill item on ground for pickup
+                surface.spill_item_stack({
+                    position                  = pos,
+                    stack                     = { name = "cargo-hatch", count = 1 },
+                    enable_looted             = false,
+                    allow_belts               = false,
+                    use_start_position_on_failure = true,
+                })
+            end
+            return
+        end
+    end
+
+    register(entity)
 end
 
 function M.on_removed(event)
     local entity = event.entity
     if entity and entity.name == "cargo-hatch" then unregister(entity) end
+end
+
+-- ─── Research handler ────────────────────────────────────────────────────────
+
+function M.on_research_finished(event)
+    if event.research.name ~= "the-reef-cargo-hatch-capacity" then return end
+    storage.cargo_hatch_extra_capacity = storage.cargo_hatch_extra_capacity or {}
+    local fi = event.research.force.index
+    storage.cargo_hatch_extra_capacity[fi] = (storage.cargo_hatch_extra_capacity[fi] or 0) + 1
 end
 
 -- ─── Platform cargo inventory ────────────────────────────────────────────────
@@ -92,7 +150,6 @@ local function sync(data)
     local inv  = hatch.get_inventory(defines.inventory.chest)
     local item = data.item
 
-    -- Return wrong-type items to cargo
     for i = 1, #inv do
         local stack = inv[i]
         if stack.valid_for_read and stack.name ~= item then
@@ -125,12 +182,6 @@ function M.on_tick(event)
 end
 
 -- ─── GUI ─────────────────────────────────────────────────────────────────────
--- Uses player.gui.relative anchored to container_gui so the panel appears
--- beside the inventory slot. This gives us:
---   • X close button in the title bar automatically
---   • E / Esc close both the entity GUI and our panel
---   • No need to suppress the default container GUI (that slot IS the
---     "current contents" display the player needs to see)
 
 local function build_gui(player, data)
     local rel = player.gui.relative
@@ -147,7 +198,19 @@ local function build_gui(player, data)
         },
     })
 
-    -- Item filter row
+    -- Capacity display (only on space platforms)
+    local surface = data.entity.surface
+    if surface.platform then
+        local limit = get_limit(data.entity.force)
+        local count = get_platform_hatch_count(surface)
+        local cap_row = frame.add({ type = "flow", direction = "horizontal" })
+        cap_row.add({
+            type    = "label",
+            caption = { "cargo-hatch-gui.capacity", count, limit },
+        })
+    end
+
+    -- Item filter
     local row1 = frame.add({ type = "flow", direction = "horizontal" })
     row1.style.vertical_align = "center"
     row1.add({ type = "label", caption = { "cargo-hatch-gui.item-label" } })
@@ -158,7 +221,7 @@ local function build_gui(player, data)
         item      = data.item or nil,
     })
 
-    -- Mode toggle row
+    -- Mode toggle
     local row2 = frame.add({ type = "flow", direction = "horizontal" })
     row2.style.vertical_align = "center"
     row2.add({ type = "label", caption = { "cargo-hatch-gui.mode-label" } })
@@ -182,8 +245,6 @@ function M.on_gui_opened(event)
 
     storage.hatch_gui[event.player_index] = entity.unit_number
     build_gui(player, data)
-    -- Do NOT set player.opened = nil — let the default container GUI show.
-    -- Its 1-slot inventory is the "current contents" display.
 end
 
 function M.on_gui_closed(event)
