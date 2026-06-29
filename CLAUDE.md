@@ -8,11 +8,14 @@ The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (li
 
 **Do not preload the docs/ files.** Read them on demand when an error or unknown arises. Tool call results (Grep, Read, Bash) fade naturally via compaction; permanent @-loading costs tokens every session regardless of relevance.
 
+**Session start (always, automatically, before responding to any task):**
+1. Check if `HANDOFF.md` exists in the repo root — if so, read it immediately and silently incorporate its state. Do not wait for the user to mention it.
+2. Ask the user if they want the Factorio log monitor started.
+3. Then proceed with whatever the user asks.
+
 **Workflow:**
-1. Ask user if they want the Factorio log monitor started (do this first, before anything else)
-2. Read HANDOFF.md if it exists — this is the previous session's state summary
-3. Work normally; when an error or unknown arises, grep local game files or read the relevant doc section
-4. Solve it, add confirmed findings to `docs/common-errors.md`, move on
+1. Work normally; when an error or unknown arises, grep local game files or read the relevant doc section
+2. Solve it, add confirmed findings to `docs/common-errors.md`, move on
 
 **Handoff system:**
 At every natural stopping point (phase complete, end of day, pre-restart), write `HANDOFF.md` in the repo root:
