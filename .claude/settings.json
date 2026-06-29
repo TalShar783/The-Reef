@@ -4,5 +4,29 @@
       "Write(The-Reef/*)",
       "Bash(git *)"
     ]
+  },
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cp 'c:/Users/nacus/OneDrive/Documents/Repositories/The-Reef/HANDOFF.md' 'c:/Users/nacus/OneDrive/Documents/Repositories/The-Reef/.claude/handoff-backup.md' 2>/dev/null || true",
+            "statusMessage": "Backing up handoff before compaction..."
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'HANDOFF=\"c:/Users/nacus/OneDrive/Documents/Repositories/The-Reef/HANDOFF.md\"; BACKUP=\"c:/Users/nacus/OneDrive/Documents/Repositories/The-Reef/.claude/handoff-backup.md\"; FILE=\"\"; [ -f \"$HANDOFF\" ] && FILE=\"$HANDOFF\" || { [ -f \"$BACKUP\" ] && FILE=\"$BACKUP\"; }; if [ -n \"$FILE\" ]; then python3 -c \"import json,sys; content=open(sys.argv[1]).read(); print(json.dumps({\\\"hookSpecificOutput\\\": {\\\"hookEventName\\\": \\\"PostCompact\\\", \\\"additionalContext\\\": \\\"--- HANDOFF (restored after compaction) ---\\\\n\\\" + content}}))\" \"$FILE\"; fi'",
+            "statusMessage": "Restoring handoff context after compaction..."
+          }
+        ]
+      }
+    ]
   }
 }

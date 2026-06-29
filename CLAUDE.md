@@ -9,20 +9,37 @@ The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (li
 **Do not preload the docs/ files.** Read them on demand when an error or unknown arises. Tool call results (Grep, Read, Bash) fade naturally via compaction; permanent @-loading costs tokens every session regardless of relevance.
 
 **Workflow:**
-1. Start work normally
-2. When an error, unknown field name, or API question comes up → grep local game files or read the relevant doc section
-3. Solve it, confirm the finding, add to `docs/common-errors.md` if reusable
-4. Move on — the lookup fades, the finding stays
+1. Ask user if they want the Factorio log monitor started (do this first, before anything else)
+2. Read HANDOFF.md if it exists — this is the previous session's state summary
+3. Work normally; when an error or unknown arises, grep local game files or read the relevant doc section
+4. Solve it, add confirmed findings to `docs/common-errors.md`, move on
 
-**When to start a new chat:**
-- At the start of a new day/work session (CLAUDE.md reloads key context quickly)
-- After a major phase is complete and direction changes significantly
-- When you notice repeated mistakes or loss of earlier decisions (compaction has gone too far)
-- When the session has been very long and responses feel less contextually aware
+**Handoff system:**
+At every natural stopping point (phase complete, end of day, pre-restart), write `HANDOFF.md` in the repo root:
+```
+# The Reef — Session Handoff
+Current phase: [e.g. Phase 4 complete, starting Phase 5]
+Branch: BUILD-1
+Last decisions: [3-5 bullet points of what was just decided/built]
+Next immediate step: [single clear next action]
+Open questions: [anything unresolved]
+Recent gotchas: [any new common-errors.md entries worth highlighting]
+```
+HANDOFF.md is gitignored and ephemeral. The PreCompact hook backs it up; the PostCompact hook injects it back into context after compaction. Delete it when starting a genuinely new phase.
+
+**Suggest a handoff-and-restart** when:
+- A feature or phase just completed cleanly
+- The session has been long and responses are feeling less specific
+- The user is about to switch to a significantly different area of the mod
+- After a series of rapid error-fix cycles that created a lot of noise in context
+
+**Compaction vs new session:**
+- `/compact` = same session continues with compressed history. Use mid-feature. HANDOFF.md is injected back automatically via PostCompact hook.
+- New conversation window = truly fresh. CLAUDE.md reloads. Better for phase transitions or next-day starts. Read HANDOFF.md explicitly at the start.
 
 **When to stay in the same session:**
-- Actively debugging a specific bug (context of the bug is valuable)
-- Mid-feature where I have file contents and architecture in mind
+- Actively debugging a specific bug
+- Mid-feature with file contents and architecture in mind
 - Rapid iteration cycles (error → fix → test → error)
 
 ## Reference Documentation
