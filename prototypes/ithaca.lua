@@ -25,6 +25,7 @@ PlanetsLib:extend({
     solar_power_in_space     = 75,
     label_orientation        = 0.25,
     asteroid_spawn_influence = 0.2,
+    pollutant_type           = nil,   -- disable pollution; no absorption on station tiles
 
     -- Minimal map gen — on_chunk_generated in control.lua handles actual tile placement.
     -- empty-space everywhere outside the station radius, space-platform-foundation inside.
