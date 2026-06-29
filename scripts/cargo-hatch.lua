@@ -113,10 +113,9 @@ end
 -- ─── Platform cargo inventory ────────────────────────────────────────────────
 
 local function get_cargo_inventory(surface)
-    if surface.platform then
-        local cargo = surface.platform.cargo_inventory
-        if cargo then return cargo end
-    end
+    -- LuaSpacePlatform.cargo_inventory doesn't exist in Factorio 2.x;
+    -- accessing a missing key on a C++ Factorio object throws rather than
+    -- returning nil. Use the hub entity's inventory directly instead.
     local hubs = surface.find_entities_filtered({ type = "space-platform-hub" })
     if hubs[1] then return hubs[1].get_inventory(1) end
     return nil

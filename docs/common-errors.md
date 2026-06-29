@@ -149,6 +149,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### LuaSpacePlatform.cargo_inventory does not exist
+
+**Wrong:** `surface.platform.cargo_inventory`
+**Correct:** `surface.find_entities_filtered({ type = "space-platform-hub" })[1].get_inventory(1)`
+**Source:** Runtime crash during The Reef Cargo Hatch development
+**Note:** Accessing a non-existent key on a Factorio C++ object (LuaSpacePlatform, LuaEntity, etc.) throws an error rather than returning nil as plain Lua tables do. `LuaSpacePlatform` does not expose a `cargo_inventory` property in Factorio 2.x — use the hub entity's inventory directly.
+
+---
+
 ### GUI should match vanilla Factorio conventions
 
 When building entity GUIs, prefer `player.gui.relative` over `player.gui.screen`:
