@@ -123,5 +123,6 @@ Space platforms are a fundamentally different environment from planet surfaces. 
 ## Git
 
 - Branch: `BUILD-1` (all commits go here, not main)
-- Commit before starting any task; commit after completing it
-- Push after each commit
+- **Commit AND push before starting any task. Commit AND push after completing it.**
+- Never batch multiple tasks into one commit — one commit per task, before and after
+- Push immediately after every commit, no exceptions
