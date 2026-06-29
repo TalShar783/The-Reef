@@ -143,9 +143,9 @@ script.on_event(defines.events.on_chunk_generated, function(event)
             local eff_r     = STATION_RADIUS + edge_noise(x, y)
 
             if dist <= eff_r then
-                name = "space-platform-foundation"
+                name = "ithaca-station-floor"
             elseif dist > exclusion_r and is_island(x, y) then
-                name = "space-platform-foundation"
+                name = "ithaca-station-floor"
             else
                 name = "empty-space"
             end
@@ -220,11 +220,11 @@ script.on_event(defines.events.on_chunk_generated, function(event)
 end)
 
 -- ─── Tile restoration ────────────────────────────────────────────────────────
--- Any mined/deconstructed space-platform-foundation on Ithaca reveals
--- fulgoran-machinery underneath. sprite_usage_surface="fulgora" on that tile
--- is a renderer hint, not a hard placement restriction — testing confirmed it
--- renders acceptably on non-Fulgora surfaces. If it shows as a missing texture,
--- swap to "empty-space" as the fallback.
+-- Natural Ithaca floor uses ithaca-station-floor (no minable field) so it
+-- cannot be removed. This handler only fires for regular space-platform-foundation
+-- tiles the player themselves placed. Those become empty-space when removed.
+-- The map-gen base tile (alien biomes grass) is irrelevant — it will never
+-- show through since ithaca-station-floor is indestructible.
 
 local function restore_tiles(surface_index, tiles)
     local surface = game.surfaces[surface_index]
@@ -232,7 +232,7 @@ local function restore_tiles(surface_index, tiles)
     local replacements = {}
     for _, t in ipairs(tiles) do
         if t.old_tile and t.old_tile.name == "space-platform-foundation" then
-            replacements[#replacements + 1] = { name = "fulgoran-machinery", position = t.position }
+            replacements[#replacements + 1] = { name = "empty-space", position = t.position }
         end
     end
     if #replacements > 0 then

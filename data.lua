@@ -9,6 +9,9 @@ require("prototypes.technologies.the-reef-discovery")
 -- Item groups (must load before items so subgroups exist)
 require("prototypes.item-groups")
 
+-- Custom tiles
+require("prototypes.tiles")
+
 -- Phase 2: items, asteroids, recipes
 require("prototypes.items")
 require("prototypes.asteroids")
