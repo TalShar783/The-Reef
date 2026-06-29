@@ -149,6 +149,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### surface.create_entity uses `name`, not `type`
+
+**Wrong:** `surface.create_entity({ type = "flying-text", ... })`
+**Correct:** `surface.create_entity({ name = "flying-text", ... })`
+**Source:** Runtime error during The Reef Cargo Hatch development: "value for required field 'name' is missing"
+**Note:** `create_entity` always identifies the prototype by `name`. The `type` field is a prototype-schema field, not a `create_entity` selector. This applies to all entity creation including flying-text, explosions, particles, etc.
+
+---
+
 ### game.item_prototypes removed in Factorio 2.x
 
 **Wrong:** `game.item_prototypes[name].stack_size`
