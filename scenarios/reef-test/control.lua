@@ -103,6 +103,23 @@ local function setup()
     give(player, "firearm-magazine",          500)
     give(player, "piercing-rounds-magazine",  200)
 
+    -- ── Legendary Mech Armor + equipment ─────────────────────────────────
+    local armor_inv = player.get_inventory(defines.inventory.character_armor)
+    armor_inv.insert{ name = "mech-armor", quality = "legendary", count = 1 }
+    local armor_stack = armor_inv[1]
+    if armor_stack and armor_stack.valid_for_read and armor_stack.grid then
+        local grid = armor_stack.grid
+        grid.put{ name = "fusion-reactor-equipment",    quality = "legendary" }
+        grid.put{ name = "exoskeleton-equipment",       quality = "legendary" }
+        grid.put{ name = "exoskeleton-equipment",       quality = "legendary" }
+        grid.put{ name = "personal-roboport-mk2-equipment", quality = "legendary" }
+        grid.put{ name = "personal-roboport-mk2-equipment", quality = "legendary" }
+    end
+
+    -- Two stacks each of logistics and construction bots
+    give(player, "logistic-robot",      100)
+    give(player, "construction-robot",  100)
+
     player.print("[The Reef Test] Platform ready. Hub stocked. Cargo hatch placed at (3,0).")
     player.print("[The Reef Test] Use /editor for free entity placement and surface switching.")
 end
