@@ -96,12 +96,13 @@ local function try_create_platform(player)
     end
 
     -- Pre-place cargo hatch + inserter
+    -- Hub occupies ±4 tiles from centre; hatch at 6 clears it
     surface.create_entity{
-        name = "cargo-hatch", position = { 3, 0 }, force = force,
+        name = "cargo-hatch", position = { 6, 0 }, force = force,
         create_build_effect_smoke = false,
     }
     surface.create_entity{
-        name = "fast-inserter", position = { 5, 0 },
+        name = "fast-inserter", position = { 8, 0 },
         direction = defines.direction.west, force = force,
         create_build_effect_smoke = false,
     }
