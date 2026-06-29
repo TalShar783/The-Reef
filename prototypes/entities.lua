@@ -46,8 +46,8 @@ reactor.hidden        = false
 reactor.subgroup      = "the-reef-machines"
 reactor.order         = "b[reactor]"
 reactor.minable       = { mining_time = 1, result = "dilithium-reactor-1" }
-reactor.collision_box = {{ -1, -1 }, { 1, 1 }}   -- 2x2
-reactor.selection_box = {{ -1, -1 }, { 1, 1 }}
+reactor.collision_box = {{ -0.9, -0.9 }, { 0.9, 0.9 }}   -- 2x2, inset to allow adjacent placement
+reactor.selection_box = {{ -1,   -1   }, { 1,   1   }}
 reactor.energy_source = {
     type              = "electric",
     buffer_capacity   = "2MJ",
