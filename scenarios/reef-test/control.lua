@@ -133,7 +133,7 @@ script.on_init(function()
     storage.setup_done = false
 end)
 
-script.on_player_joined_game(function(event)
+script.on_event(defines.events.on_player_joined_game, function(event)
     -- Only run once per game, not on every reload
     if storage.setup_done then return end
     storage.setup_done = true
