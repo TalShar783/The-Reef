@@ -81,15 +81,25 @@ scrap_deposit.order         = "z[scrap-deposit]"
 data:extend({ scrap_deposit })
 
 -- Cargo Hatch (basic)
--- A 1-slot container that syncs with the platform cargo hub.
+-- A 2×2 container that syncs with the platform cargo hub.
 -- inventory_size = 1 enforces the single-stack buffer at the entity level.
+-- surface_conditions: gravity = 0 restricts placement to space platforms only.
 -- Placeholder graphics: iron chest. Replace with custom art before release.
 
 local hatch = table.deepcopy(data.raw["container"]["iron-chest"])
-hatch.name           = "cargo-hatch"
-hatch.icon           = "__base__/graphics/icons/iron-chest.png"
-hatch.icon_size      = 64
-hatch.inventory_size = 1
-hatch.minable        = { mining_time = 0.5, result = "cargo-hatch" }
+hatch.name              = "cargo-hatch"
+hatch.icon              = "__base__/graphics/icons/iron-chest.png"
+hatch.icon_size         = 64
+hatch.inventory_size    = 1
+hatch.minable           = { mining_time = 0.5, result = "cargo-hatch" }
+hatch.collision_box     = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
+hatch.selection_box     = {{ -1,   -1   }, { 1,   1   }}
+hatch.surface_conditions = {
+    {
+        property = "gravity",
+        min      = 0,
+        max      = 0,
+    }
+}
 
 data:extend({ hatch })
