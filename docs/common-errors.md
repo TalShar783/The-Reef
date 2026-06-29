@@ -149,6 +149,22 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### GUI should match vanilla Factorio conventions
+
+When building entity GUIs, prefer `player.gui.relative` over `player.gui.screen`:
+- Anchors the panel beside the entity's own inventory GUI
+- X close button appears in the title bar automatically
+- E and Esc close both the entity GUI and the relative panel
+- No custom close button needed
+- The default entity inventory slot stays visible (use it for "current contents")
+
+Setting `player.opened = nil` inside `on_gui_opened` to suppress the default GUI
+causes `on_gui_closed` to fire immediately, corrupting `storage` state and breaking
+subsequent GUI interactions. Always handle both `on_gui_opened` AND `on_gui_closed`
+when using relative GUIs.
+
+---
+
 ### Vanilla containers are blocked from space platforms by Space Age data-updates
 
 **Context:** `space-age/base-data-updates.lua` adds `surface_conditions = { { property = "gravity", min = 0.1 } }` to all vanilla containers (wooden-chest, iron-chest, steel-chest, all logistic chests). This is why no vanilla chest can be placed on space platforms (gravity = 0).

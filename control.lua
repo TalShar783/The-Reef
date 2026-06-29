@@ -27,7 +27,8 @@ script.on_event(defines.events.script_raised_destroy,  cargo_hatch.on_removed, h
 
 -- Sync and GUI
 script.on_event(defines.events.on_tick,                cargo_hatch.on_tick)
-script.on_event(defines.events.on_gui_opened,          cargo_hatch.on_gui_opened)
+script.on_event(defines.events.on_gui_opened,       cargo_hatch.on_gui_opened)
+script.on_event(defines.events.on_gui_closed,       cargo_hatch.on_gui_closed)
 script.on_event(defines.events.on_gui_click,           cargo_hatch.on_gui_click)
 script.on_event(defines.events.on_gui_elem_changed,    cargo_hatch.on_gui_elem_changed)
 
