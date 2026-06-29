@@ -149,6 +149,15 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### game.item_prototypes removed in Factorio 2.x
+
+**Wrong:** `game.item_prototypes[name].stack_size`
+**Correct:** `prototypes.item[name].stack_size`
+**Source:** Runtime crash during The Reef Cargo Hatch development
+**Note:** In Factorio 2.x, `game.item_prototypes` (and similar `game.*_prototypes` tables) were replaced with the `prototypes` global. Same C++ object / throws on missing keys. Use `prototypes.item`, `prototypes.entity`, `prototypes.recipe`, etc.
+
+---
+
 ### LuaSpacePlatform.cargo_inventory does not exist
 
 **Wrong:** `surface.platform.cargo_inventory`

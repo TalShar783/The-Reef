@@ -161,7 +161,7 @@ local function sync(data)
         if inv.get_item_count(item) == 0 then
             local available = cargo.get_item_count(item)
             if available > 0 then
-                local stack_size = game.item_prototypes[item].stack_size
+                local stack_size = prototypes.item[item].stack_size
                 local n = cargo.remove({ name = item, count = math.min(stack_size, available) })
                 inv.insert({ name = item, count = n })
             end
