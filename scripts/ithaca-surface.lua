@@ -240,15 +240,6 @@ local function restore_tiles(surface_index, tiles)
     end
 end
 
--- ─── Nuclear decorative cleanup ──────────────────────────────────────────────
--- Atomic bombs place nuclear-ground-patch decoratives (not tile replacement).
--- Clear them from Ithaca every second so they don't persist on the station.
-
-script.on_nth_tick(60, function()
-    local surface = game.surfaces["ithaca"]
-    if not (surface and surface.valid) then return end
-    surface.destroy_decoratives({ name = "nuclear-ground-patch" })
-end)
 
 script.on_event(defines.events.on_player_mined_tile, function(event)
     restore_tiles(event.surface_index, event.tiles)
