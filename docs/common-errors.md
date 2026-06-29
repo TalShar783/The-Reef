@@ -149,6 +149,18 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Vanilla containers are blocked from space platforms by Space Age data-updates
+
+**Context:** `space-age/base-data-updates.lua` adds `surface_conditions = { { property = "gravity", min = 0.1 } }` to all vanilla containers (wooden-chest, iron-chest, steel-chest, all logistic chests). This is why no vanilla chest can be placed on space platforms (gravity = 0).
+
+**Impact on custom entities:** A `table.deepcopy` of iron-chest performed in `data.lua` does NOT inherit this condition — Space Age's data-updates runs after `data.lua`. The `cargo-hatch` entity therefore needs its `surface_conditions` set explicitly.
+
+**Platform-only condition:** `surface_conditions = { { property = "gravity", min = 0, max = 0 } }` restricts placement to space platforms (gravity = 0) only.
+
+**Planet-only condition:** `surface_conditions = { { property = "gravity", min = 0.1 } }` (no max) matches what Space Age applies to vanilla containers — requires at least 0.1g, blocking space platforms.
+
+---
+
 ### Wrong mod prefix on icon paths (__space-age__ vs __base__)
 
 **Wrong:** `"__space-age__/graphics/icons/nuclear-reactor.png"`
