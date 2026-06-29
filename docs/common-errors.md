@@ -149,12 +149,14 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
-### surface.create_entity uses `name`, not `type`
+### `flying-text` entity removed in Factorio 2.x
 
-**Wrong:** `surface.create_entity({ type = "flying-text", ... })`
-**Correct:** `surface.create_entity({ name = "flying-text", ... })`
-**Source:** Runtime error during The Reef Cargo Hatch development: "value for required field 'name' is missing"
-**Note:** `create_entity` always identifies the prototype by `name`. The `type` field is a prototype-schema field, not a `create_entity` selector. This applies to all entity creation including flying-text, explosions, particles, etc.
+**Wrong:** `surface.create_entity({ name = "flying-text", position = ..., text = ..., color = ... })`
+**Correct:** `player.create_local_flying_text({ position = ..., text = ..., color = ..., time_to_live = 120 })`
+**Source:** Runtime error during The Reef Cargo Hatch development: "Unknown entity name: flying-text"
+**Note:** `flying-text` was a spawnable entity in Factorio 1.x but was removed in 2.x. Use `LuaPlayer.create_local_flying_text` instead — it shows text only to the local player and takes `position`, `text`, `color`, and `time_to_live` (in ticks).
+
+Also: `create_entity` always identifies prototypes by `name`, not `type`. The `type` field is a data-stage prototype schema field only.
 
 ---
 

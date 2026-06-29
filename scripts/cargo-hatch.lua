@@ -72,11 +72,11 @@ function M.on_pre_build(event)
     -- count is BEFORE this placement, so >= limit means it would be exceeded
     if count >= limit then
         player.play_sound({ path = "utility/cannot_build" })
-        surface.create_entity({
-            name     = "flying-text",
-            position = event.position,
-            text     = { "cargo-hatch.limit-reached", count, limit },
-            color    = { r = 1, g = 0.5, b = 0.5 },
+        player.create_local_flying_text({
+            position     = event.position,
+            text         = { "cargo-hatch.limit-reached", count, limit },
+            color        = { r = 1, g = 0.5, b = 0.5 },
+            time_to_live = 120,
         })
     end
 end
