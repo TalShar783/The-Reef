@@ -28,6 +28,7 @@ pmr.crafting_speed   = 1
 pmr.ingredient_count = 4  -- max 4 ingredient types (fuel cell needs 3)
 pmr.minable          = { mining_time = 0.5, result = "basic-pmr" }
 pmr.fixed_recipe     = nil
+pmr.next_upgrade     = nil
 
 -- 1x1 footprint (standard chest inset).
 pmr.collision_box = {{ -0.35, -0.35 }, { 0.35, 0.35 }}
