@@ -296,6 +296,15 @@ when using relative GUIs.
 
 ---
 
+### `defines.inventory.assembling_machine_input/output` renamed in 2.x
+
+**Wrong:** `entity.get_inventory(defines.inventory.assembling_machine_input)` → returns nil → `get_inventory` crashes with "real number expected got nil"
+**Correct:** `entity.get_inventory(defines.inventory.crafter_input)` / `defines.inventory.crafter_output`
+**Source:** The Reef PMR on_tick error — `assembling_machine_input` and `assembling_machine_output` do not exist in the Factorio 2.x `defines.inventory` table. The 2.x unification of crafting entities under the generic "crafter" type renamed these defines. Only `assembling_machine_dump` survives from the old naming.
+**Note:** Affects all runtime code that accesses assembling-machine inventories by define name. Use `crafter_input`, `crafter_output`, `crafter_modules`, `crafter_trash` for all crafting machines in 2.x.
+
+---
+
 ### `next_upgrade` bounding box mismatch after resizing a deepcopied assembling-machine
 
 **Error:** `next_upgrade target (assembling-machine-2) must have the same bounding box`
