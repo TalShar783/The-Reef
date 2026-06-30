@@ -98,10 +98,10 @@ Priority order for any unknown:
 
 If a name cannot be confirmed from any of the above: say so and ask rather than guessing.
 
-**Querying the API JSON files:** Use the `Grep` tool directly on `.skill-scratch/runtime-api.json` and `.skill-scratch/prototype-api.json` — do **not** use PowerShell `Get-Content` + `ConvertFrom-Json`. Grep is auto-permitted and requires no permission prompts. Examples:
-- Find a method: `Grep '"name": "insert_at_back"' .skill-scratch/runtime-api.json -C 20`
-- Find a define: `Grep '"crafter_input"' .skill-scratch/runtime-api.json`
-- Find a prototype's properties: `Grep '"CraftingMachinePrototype"' .skill-scratch/prototype-api.json -A 5`
+**Querying the API JSON files:** Use `Bash` with `grep` (RTK rewrites to `rtk grep` via hook) on `.skill-scratch/runtime-api.json` and `.skill-scratch/prototype-api.json` — do **not** use PowerShell `Get-Content` + `ConvertFrom-Json`. Examples:
+- Find a method: `grep -A 20 '"name": "insert_at_back"' .skill-scratch/runtime-api.json`
+- Find a define: `grep "crafter_input" .skill-scratch/runtime-api.json`
+- Find a prototype's properties: `grep -A 10 '"CraftingMachinePrototype"' .skill-scratch/prototype-api.json`
 
 ## Testing
 
