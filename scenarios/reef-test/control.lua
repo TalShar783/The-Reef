@@ -77,9 +77,11 @@ local function try_create_platform(player)
     local surface = platform.surface
 
     -- Foundation pad
+    -- Hub footprint is exactly ±4 tiles (selection_box {{-4,-4},{4,4}}); a -5..5
+    -- pad left almost no clearance for anything else. Widened to -8..8.
     local tiles = {}
-    for x = -5, 5 do
-        for y = -5, 5 do
+    for x = -8, 8 do
+        for y = -8, 8 do
             tiles[#tiles + 1] = { name = "space-platform-foundation", position = { x, y } }
         end
     end
@@ -101,14 +103,16 @@ local function try_create_platform(player)
     end
 
     -- Power: 4 solar panels + 2 accumulators for sustained PMR operation.
-    -- Positions chosen to fit within the 11×11 foundation, clear of the hub.
-    for _, pos in ipairs({ {-3.5, -3.5}, {3.5, -3.5}, {-3.5, 3.5}, {3.5, 3.5} }) do
+    -- Hub footprint is exactly ±4 tiles in both axes (collision_box ±3.9,
+    -- selection_box ±4) — every position below clears that box on at least
+    -- one axis with margin for its own footprint (solar panel 3x3, accumulator 2x2).
+    for _, pos in ipairs({ {-6, -6}, {6, -6}, {-6, 6}, {6, 6} }) do
         surface.create_entity{
             name = "solar-panel", position = pos, force = force,
             create_build_effect_smoke = false,
         }
     end
-    for _, pos in ipairs({ {0, -4}, {0, 4} }) do
+    for _, pos in ipairs({ {0, -6}, {0, 6} }) do
         surface.create_entity{
             name = "accumulator", position = pos, force = force,
             create_build_effect_smoke = false,
@@ -116,7 +120,7 @@ local function try_create_platform(player)
     end
 
     -- Pre-place cargo hatch + inserter
-    -- Hub occupies ±2 tiles from centre; hatch at x=6 clears it
+    -- Hub occupies ±4 tiles from centre; hatch at x=6 clears it
     surface.create_entity{
         name = "cargo-hatch", position = { 6, 0 }, force = force,
         create_build_effect_smoke = false,
@@ -127,14 +131,14 @@ local function try_create_platform(player)
         create_build_effect_smoke = false,
     }
 
-    -- Pre-place PMR south of hub for easy recipe testing
+    -- Pre-place PMR west of hub for easy recipe testing (clear of hub, hatch, and power entities)
     surface.create_entity{
-        name = "basic-pmr", position = { 0, 4 }, force = force,
+        name = "basic-pmr", position = { -6, 0 }, force = force,
         create_build_effect_smoke = false,
     }
 
     player.teleport({ 0, 3 }, surface)
-    player.print("[The Reef Test] Platform created. Hub stocked with ores. PMR at (0,4). Solar panels placed.")
+    player.print("[The Reef Test] Platform created. Hub stocked with ores. PMR at (-6,0). Solar panels placed.")
 end
 
 local function setup(player)
