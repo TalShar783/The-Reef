@@ -48,6 +48,7 @@ HANDOFF.md is gitignored and ephemeral. The PreCompact hook backs it up; the Pos
 ## Reference Documentation
 
 Available on demand in `docs/` — read these when specifically needed:
+- `docs/prototype-index.md` — flat table of all 279 Factorio 2.x prototype classes (name, typename, one-line description). **Read this before choosing a prototype type for any new entity.** Factorio has obscure native types (e.g. `proxy-container`, `lane-splitter`) that solve problems you'd otherwise script manually — scan the index first.
 - `docs/prototype-cheatsheet.md` — confirmed prototype field names, subgroups, collision box sizing, recipe subgroups
 - `docs/space-age-api.md` — Space Age runtime events, LuaSpacePlatform, asteroid spawning API
 - `docs/common-errors.md` — confirmed error patterns from live development; check this before using any field or method that looks familiar from 1.x or training data
