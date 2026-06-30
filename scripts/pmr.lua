@@ -55,8 +55,8 @@ end
 local function sync(entity)
     if not entity.valid then return false end
 
-    local inv_in  = entity.get_inventory(defines.inventory.assembling_machine_input)
-    local inv_out = entity.get_inventory(defines.inventory.assembling_machine_output)
+    local inv_in  = entity.get_inventory(defines.inventory.crafter_input)
+    local inv_out = entity.get_inventory(defines.inventory.crafter_output)
 
     -- South belt → PMR input
     local south_belt = adjacent_belt(entity, SOUTH)
