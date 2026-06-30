@@ -296,6 +296,15 @@ when using relative GUIs.
 
 ---
 
+### `get_contents()` now returns an array, not a dictionary, in 2.x
+
+**Wrong:** `for name, count in pairs(inv.get_contents()) do` — `name` is a numeric index, `count` is an `ItemWithQualityCount` table, not a string/number pair. Passing the numeric key as an item name crashes with "Invalid ItemID".
+**Correct:** `for _, item in ipairs(inv.get_contents()) do` — each `item` is `{name: string, quality: string, count: uint}`.
+**Source:** The Reef PMR on_tick crash — `LuaTransportLine.get_contents()` and `LuaInventory.get_contents()` both changed return type from `{[string]: uint}` to `ItemWithQualityCount[]` in Factorio 2.x.
+**Note:** Applies to **both** `LuaInventory.get_contents()` and `LuaTransportLine.get_contents()`. Slot-index iteration (`for i = 1, #inv do local stack = inv[i]`) is unaffected and still preferred for inventory loops. Use `get_contents()` only when you need a summary; always iterate the result with `ipairs`, and access fields via `item.name`, `item.quality`, `item.count`.
+
+---
+
 ### `defines.inventory.assembling_machine_input/output` renamed in 2.x
 
 **Wrong:** `entity.get_inventory(defines.inventory.assembling_machine_input)` → returns nil → `get_inventory` crashes with "real number expected got nil"

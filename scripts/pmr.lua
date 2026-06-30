@@ -59,14 +59,16 @@ local function sync(entity)
     local inv_out = entity.get_inventory(defines.inventory.crafter_output)
 
     -- South belt → PMR input
+    -- get_contents() returns ItemWithQualityCount[] (array of {name,quality,count})
+    -- in Factorio 2.x, NOT the old {string→count} dict — must use ipairs.
     local south_belt = adjacent_belt(entity, SOUTH)
     if south_belt then
         for lane = 1, 2 do
             local tl = south_belt.get_transport_line(lane)
-            for name, _ in pairs(tl.get_contents()) do
-                if inv_in.can_insert({ name = name, count = 1 }) then
-                    local n = inv_in.insert({ name = name, count = 1 })
-                    if n > 0 then tl.remove_item({ name = name, count = 1 }) end
+            for _, item in ipairs(tl.get_contents()) do
+                if inv_in.can_insert({ name = item.name, count = 1 }) then
+                    local n = inv_in.insert({ name = item.name, count = 1 })
+                    if n > 0 then tl.remove_item({ name = item.name, count = 1 }) end
                 end
             end
         end
