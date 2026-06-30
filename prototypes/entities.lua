@@ -188,17 +188,47 @@ adv_hatch.selection_box        = {{ -1,   -1   }, { 1,   1   }}
 adv_hatch.surface_conditions   = {{ property = "gravity", min = 0, max = 0 }}
 
 -- Replace cargo-bay visuals with steel-chest placeholder.
+-- cargo-bay graphics_set reads `picture` (array of render-layer entries), not `animation`.
 adv_hatch.graphics_set = {
-    animation = {
-        filename    = "__base__/graphics/entity/steel-chest/steel-chest.png",
-        priority    = "extra-high",
-        width       = 64,
-        height      = 80,
-        shift       = util.by_pixel(-0.25, -0.5),
-        scale       = 0.5,
-        frame_count = 1,
-    },
+    picture = {
+        {
+            render_layer = "object",
+            layers = {
+                {
+                    filename    = "__base__/graphics/entity/steel-chest/steel-chest.png",
+                    priority    = "extra-high",
+                    width       = 64,
+                    height      = 80,
+                    shift       = util.by_pixel(-0.25, -0.5),
+                    scale       = 0.5,
+                    frame_count = 1,
+                }
+            }
+        }
+    }
 }
 adv_hatch.platform_graphics_set = nil
+-- Remove the animated hatch-lid that the cargo-bay deepcopy inherits.
+adv_hatch.hatch_definitions = nil
 
 data:extend({ adv_hatch })
+
+-- Proxy-container for advanced-cargo-hatch.
+-- Invisible, zero-collision entity placed on top of the advanced hatch.
+-- Script sets proxy_target_entity = hub so inserters/loaders read and write
+-- the hub inventory transparently without any tick-based sync.
+data:extend({
+    {
+        type               = "proxy-container",
+        name               = "advanced-cargo-hatch-proxy",
+        collision_box      = {{ -0.9, -0.9 }, { 0.9, 0.9 }},
+        selection_box      = {{ -1,   -1   }, { 1,   1   }},
+        collision_mask     = { layers = {} },
+        build_grid_size    = 2,
+        flags              = { "player-creation", "not-on-map" },
+        draw_inventory_content = false,
+        selectable_in_game = false,
+        selection_priority = 49,
+        hidden             = true,
+    }
+})

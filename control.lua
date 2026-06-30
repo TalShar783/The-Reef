@@ -14,19 +14,23 @@ end)
 script.on_event(defines.events.on_research_finished, cargo_hatch.on_research_finished)
 
 -- Register / unregister hatches on build and removal.
--- Event filters mean the handler only fires for cargo-hatch entities.
-local hatch_filter = {{ filter = "name", name = "cargo-hatch" }}
+local hatch_filter = {
+    { filter = "name", name = "cargo-hatch" },
+    { filter = "name", name = "advanced-cargo-hatch" },
+}
 
-script.on_event(defines.events.on_pre_build,           cargo_hatch.on_pre_build)
-script.on_event(defines.events.on_built_entity,        cargo_hatch.on_built,   hatch_filter)
-script.on_event(defines.events.on_robot_built_entity,  cargo_hatch.on_built,   hatch_filter)
-script.on_event(defines.events.script_raised_built,    cargo_hatch.on_built,   hatch_filter)
-script.on_event(defines.events.script_raised_revive,   cargo_hatch.on_built,   hatch_filter)
+script.on_event(defines.events.on_pre_build,                   cargo_hatch.on_pre_build)
+script.on_event(defines.events.on_built_entity,                cargo_hatch.on_built,   hatch_filter)
+script.on_event(defines.events.on_robot_built_entity,          cargo_hatch.on_built,   hatch_filter)
+script.on_event(defines.events.on_space_platform_built_entity, cargo_hatch.on_built,   hatch_filter)
+script.on_event(defines.events.script_raised_built,            cargo_hatch.on_built,   hatch_filter)
+script.on_event(defines.events.script_raised_revive,           cargo_hatch.on_built,   hatch_filter)
 
-script.on_event(defines.events.on_player_mined_entity, cargo_hatch.on_removed, hatch_filter)
-script.on_event(defines.events.on_robot_mined_entity,  cargo_hatch.on_removed, hatch_filter)
-script.on_event(defines.events.on_entity_died,         cargo_hatch.on_removed, hatch_filter)
-script.on_event(defines.events.script_raised_destroy,  cargo_hatch.on_removed, hatch_filter)
+script.on_event(defines.events.on_player_mined_entity,         cargo_hatch.on_removed, hatch_filter)
+script.on_event(defines.events.on_robot_mined_entity,          cargo_hatch.on_removed, hatch_filter)
+script.on_event(defines.events.on_space_platform_mined_entity, cargo_hatch.on_removed, hatch_filter)
+script.on_event(defines.events.on_entity_died,                 cargo_hatch.on_removed, hatch_filter)
+script.on_event(defines.events.script_raised_destroy,          cargo_hatch.on_removed, hatch_filter)
 
 -- Sync and GUI
 script.on_event(defines.events.on_tick,                cargo_hatch.on_tick)

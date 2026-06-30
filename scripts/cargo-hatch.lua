@@ -1,8 +1,9 @@
 -- Cargo Hatch script.
 --
--- Handles "cargo-hatch" only (the basic single-item variant).
--- "advanced-cargo-hatch" is a cargo-bay type and manages itself natively —
--- it IS the platform hub inventory and needs no scripted sync.
+-- Handles both hatch types:
+--   cargo-hatch          (basic)    — container with scripted tick-based hub sync and filter GUI
+--   advanced-cargo-hatch (advanced) — cargo-bay type; inserter access via proxy-container that
+--                                     forwards interactions directly to the hub inventory
 
 local SYNC_INTERVAL   = 30
 local BASE_LIMIT      = 1
@@ -18,6 +19,7 @@ function M.on_init()
     storage.hatch_gui                  = {}
     storage.cargo_hatch_extra_capacity = {}
     storage.cargo_hatch_extra_range    = {}
+    storage.adv_hatch_proxies          = {}   -- unit_number -> proxy LuaEntity
 end
 
 -- ─── Limit / range helpers ───────────────────────────────────────────────────
@@ -129,6 +131,32 @@ end
 
 local HATCH_NAMES = { ["cargo-hatch"] = true, ["advanced-cargo-hatch"] = true }
 
+-- ─── Advanced hatch proxy ────────────────────────────────────────────────────
+
+local function spawn_adv_hatch_proxy(entity)
+    storage.adv_hatch_proxies = storage.adv_hatch_proxies or {}
+    local proxy = entity.surface.create_entity({
+        name     = "advanced-cargo-hatch-proxy",
+        force    = entity.force,
+        position = entity.position,
+    })
+    if not proxy then return end
+    proxy.destructible             = false
+    proxy.proxy_target_inventory   = defines.inventory.hub_main
+    local hub = get_hub(entity.surface)
+    if hub then proxy.proxy_target_entity = hub end
+    storage.adv_hatch_proxies[entity.unit_number] = proxy
+end
+
+local function destroy_adv_hatch_proxy(unit_number)
+    storage.adv_hatch_proxies = storage.adv_hatch_proxies or {}
+    local proxy = storage.adv_hatch_proxies[unit_number]
+    if proxy and proxy.valid then proxy.destroy() end
+    storage.adv_hatch_proxies[unit_number] = nil
+end
+
+-- ─── Build / remove ──────────────────────────────────────────────────────────
+
 function M.on_built(event)
     local entity = event.entity or event.created_entity
     if not entity or not HATCH_NAMES[entity.name] then return end
@@ -157,12 +185,21 @@ function M.on_built(event)
         end
     end
 
-    register(entity)
+    if entity.name == "advanced-cargo-hatch" then
+        spawn_adv_hatch_proxy(entity)
+    else
+        register(entity)
+    end
 end
 
 function M.on_removed(event)
     local entity = event.entity
-    if entity and HATCH_NAMES[entity.name] then unregister(entity) end
+    if not entity or not HATCH_NAMES[entity.name] then return end
+    if entity.name == "advanced-cargo-hatch" then
+        destroy_adv_hatch_proxy(entity.unit_number)
+    else
+        unregister(entity)
+    end
 end
 
 -- ─── Research handler ────────────────────────────────────────────────────────

@@ -10,8 +10,9 @@ The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (li
 
 **Session start (always, automatically, before responding to any task):**
 1. Check if `HANDOFF.md` exists in the repo root — if so, read it immediately and silently incorporate its state. Do not wait for the user to mention it.
-2. Ask the user if they want the Factorio log monitor started.
-3. Then proceed with whatever the user asks.
+2. Check if `docs/prototype-index.md` exists. If it does not, generate it immediately before doing anything else — run the PowerShell script in the **Prototype Index** section below.
+3. Ask the user if they want the Factorio log monitor started.
+4. Then proceed with whatever the user asks.
 
 **Workflow:**
 1. Work normally; when an error or unknown arises, grep local game files or read the relevant doc section
@@ -45,10 +46,39 @@ HANDOFF.md is gitignored and ephemeral. The PreCompact hook backs it up; the Pos
 - Mid-feature with file contents and architecture in mind
 - Rapid iteration cycles (error → fix → test → error)
 
+## Prototype Index
+
+`docs/prototype-index.md` is a flat table of all 279 Factorio 2.x prototype classes (name, typename, one-line description). **Read it before choosing a prototype type for any new entity.** Factorio has native types that solve problems you would otherwise script manually (e.g. `proxy-container`, `lane-splitter`) — always scan the index first so you do not miss a better fit.
+
+**If the file is missing**, regenerate it with this PowerShell script (run from the repo root):
+```powershell
+$json = Get-Content ".skill-scratch/prototype-api.json" -Raw | ConvertFrom-Json
+$sb = [System.Text.StringBuilder]::new()
+$null = $sb.AppendLine("# Factorio 2.x Prototype Index")
+$null = $sb.AppendLine("")
+$null = $sb.AppendLine("Generated from prototype-api.json (api_version $($json.api_version), game $($json.application_version)).")
+$null = $sb.AppendLine("Entries marked **[NO DESC]** have blank descriptions in the API — fill these in manually.")
+$null = $sb.AppendLine("")
+$null = $sb.AppendLine("| Prototype class | typename | Description |")
+$null = $sb.AppendLine("|---|---|---|")
+foreach ($p in $json.prototypes | Sort-Object name) {
+    $desc = [regex]::Replace($p.description.Trim(), '\[([^\]]+)\]\([^)]+\)', '$1')
+    $first = ($desc -split '\.')[0].Trim()
+    $abstractTag = if ($p.abstract -eq $true) { " *(abstract)*" } else { "" }
+    $tn = if ($p.typename) { $p.typename } else { "*(abstract)*" }
+    if (-not $desc) { $null = $sb.AppendLine("| $($p.name)$abstractTag | $tn | **[NO DESC]** |") }
+    else            { $null = $sb.AppendLine("| $($p.name)$abstractTag | $tn | $first |") }
+}
+$null = $sb.AppendLine("")
+$null = $sb.AppendLine("---")
+$null = $sb.AppendLine("*Abstract prototypes are base types only — not used directly in data:extend.*")
+[System.IO.File]::WriteAllText("docs/prototype-index.md", $sb.ToString(), [System.Text.Encoding]::UTF8)
+```
+
 ## Reference Documentation
 
 Available on demand in `docs/` — read these when specifically needed:
-- `docs/prototype-index.md` — flat table of all 279 Factorio 2.x prototype classes (name, typename, one-line description). **Read this before choosing a prototype type for any new entity.** Factorio has obscure native types (e.g. `proxy-container`, `lane-splitter`) that solve problems you'd otherwise script manually — scan the index first.
+- `docs/prototype-index.md` — see **Prototype Index** above.
 - `docs/prototype-cheatsheet.md` — confirmed prototype field names, subgroups, collision box sizing, recipe subgroups
 - `docs/space-age-api.md` — Space Age runtime events, LuaSpacePlatform, asteroid spawning API
 - `docs/common-errors.md` — confirmed error patterns from live development; check this before using any field or method that looks familiar from 1.x or training data
