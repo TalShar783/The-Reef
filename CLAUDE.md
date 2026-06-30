@@ -98,6 +98,11 @@ Priority order for any unknown:
 
 If a name cannot be confirmed from any of the above: say so and ask rather than guessing.
 
+**Querying the API JSON files:** Use the `Grep` tool directly on `.skill-scratch/runtime-api.json` and `.skill-scratch/prototype-api.json` — do **not** use PowerShell `Get-Content` + `ConvertFrom-Json`. Grep is auto-permitted and requires no permission prompts. Examples:
+- Find a method: `Grep '"name": "insert_at_back"' .skill-scratch/runtime-api.json -C 20`
+- Find a define: `Grep '"crafter_input"' .skill-scratch/runtime-api.json`
+- Find a prototype's properties: `Grep '"CraftingMachinePrototype"' .skill-scratch/prototype-api.json -A 5`
+
 ## Testing
 
 Use the **reef-test scenario** (`scenarios/reef-test/`) instead of playing through the game. Launch from Factorio's main menu → Scenarios. It starts with all tech researched, legendary mech armor, and the player on a pre-built space platform with a stocked hub.
