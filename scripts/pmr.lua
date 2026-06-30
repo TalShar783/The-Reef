@@ -41,13 +41,18 @@ end
 
 -- ─── Belt helpers ─────────────────────────────────────────────────────────────
 
-local function adjacent_belt(entity, offset)
+-- Returns the transport-belt at the given tile offset only if it faces the
+-- required direction. Underground belts, splitters, cross-belts, and any
+-- non-belt entity at that tile are all excluded.
+local function adjacent_belt(entity, offset, required_direction)
     local pos = entity.position
     local area = {
         { pos.x + offset[1] - 0.5, pos.y + offset[2] - 0.5 },
         { pos.x + offset[1] + 0.5, pos.y + offset[2] + 0.5 },
     }
-    return entity.surface.find_entities_filtered({ area = area, type = "transport-belt" })[1]
+    local belt = entity.surface.find_entities_filtered({ area = area, type = "transport-belt" })[1]
+    if not belt or belt.direction ~= required_direction then return nil end
+    return belt
 end
 
 -- ─── Tick ────────────────────────────────────────────────────────────────────
@@ -58,10 +63,9 @@ local function sync(entity)
     local inv_in  = entity.get_inventory(defines.inventory.crafter_input)
     local inv_out = entity.get_inventory(defines.inventory.crafter_output)
 
-    -- South belt → PMR input
-    -- get_contents() returns ItemWithQualityCount[] (array of {name,quality,count})
-    -- in Factorio 2.x, NOT the old {string→count} dict — must use ipairs.
-    local south_belt = adjacent_belt(entity, SOUTH)
+    -- South belt → PMR input: belt must face north (flowing into the PMR).
+    -- get_contents() returns ItemWithQualityCount[] in 2.x — use ipairs.
+    local south_belt = adjacent_belt(entity, SOUTH, defines.direction.north)
     if south_belt then
         for lane = 1, 2 do
             local tl = south_belt.get_transport_line(lane)
@@ -74,8 +78,9 @@ local function sync(entity)
         end
     end
 
-    -- PMR output → north belt
-    local north_belt = adjacent_belt(entity, NORTH)
+    -- PMR output → north belt: belt must face north (carrying items away from PMR).
+    -- insert_at_back(items, belt_stack_size) — items is param 0, size is param 1.
+    local north_belt = adjacent_belt(entity, NORTH, defines.direction.north)
     if north_belt then
         for i = 1, #inv_out do
             local stack = inv_out[i]
@@ -83,7 +88,7 @@ local function sync(entity)
                 for lane = 1, 2 do
                     local tl = north_belt.get_transport_line(lane)
                     if tl.can_insert_at_back() then
-                        tl.insert_at_back(1, { name = stack.name, count = 1 })
+                        tl.insert_at_back({ name = stack.name, count = 1 }, 1)
                         inv_out.remove({ name = stack.name, count = 1 })
                         break
                     end
