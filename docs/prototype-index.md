@@ -10,7 +10,7 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | AchievementPrototypeWithCondition *(abstract)* | *(abstract)* | **[NO DESC]** |
 | ActiveDefenseEquipmentPrototype | active-defense-equipment | Used by discharge defense and personal laser defense |
 | ActiveTriggerPrototype *(abstract)* | *(abstract)* | The abstract base of all active trigger prototypes |
-| AgriculturalTowerPrototype | agricultural-tower | **[NO DESC]** |
+| AgriculturalTowerPrototype | agricultural-tower | A stationary machine that plants trees and then harvests them into its internal inventory once they are mature. |
 | AirbornePollutantPrototype | airborne-pollutant | A type of pollution that can spread throughout the chunks of a map |
 | AmbientSound | ambient-sound | This prototype is used to make sound while playing the game |
 | AmmoCategory | ammo-category | An ammo category |
@@ -25,9 +25,9 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | ArtilleryTurretPrototype | artillery-turret | An artillery turret |
 | ArtilleryWagonPrototype | artillery-wagon | An artillery wagon |
 | AssemblingMachinePrototype | assembling-machine | An assembling machine - like the assembling machines 1/2/3 in the game, but you can use your own recipe categories |
-| AsteroidChunkPrototype | asteroid-chunk | **[NO DESC]** |
-| AsteroidCollectorPrototype | asteroid-collector | **[NO DESC]** |
-| AsteroidPrototype | asteroid | **[NO DESC]** |
+| AsteroidChunkPrototype | asteroid-chunk | A healthless entity that floats around. |
+| AsteroidCollectorPrototype | asteroid-collector | A space-platform machine that grabs asteroid chunks in a range in front of it. |
+| AsteroidPrototype | asteroid | An entity that floats around and has health, and damages entities when it touches them by damaging itself. |
 | AutoplaceControl | autoplace-control | A setting in the map creation GUI |
 | BatteryEquipmentPrototype | battery-equipment | Used by personal battery |
 | BeaconPrototype | beacon | Entity with the ability to transfer module effects to its neighboring entities |
@@ -40,10 +40,10 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | BurnerGeneratorPrototype | burner-generator | An entity that produces power from a burner energy source |
 | BurnerUsagePrototype | burner-usage | Set of data affecting tooltips, looks of gui slots etc when burner is not supposed to be burning items but eating them |
 | CapsulePrototype | capsule | A capsule, for example a combat robot capsule or the raw fish |
-| CaptureRobotPrototype | capture-robot | **[NO DESC]** |
-| CargoBayPrototype | cargo-bay | **[NO DESC]** |
-| CargoLandingPadPrototype | cargo-landing-pad | **[NO DESC]** |
-| CargoPodPrototype | cargo-pod | **[NO DESC]** |
+| CaptureRobotPrototype | capture-robot | A special type of ammo fired from the rocket launcher that turns a biter spawner into a captive biter spawner. |
+| CargoBayPrototype | cargo-bay | Interconnecting objects placed on a 2x2 grid that create a chain of reference to a cargo landing pad or platform hub as well as increasing the pad or hub's item capacity. |
+| CargoLandingPadPrototype | cargo-landing-pad | Similar to the Space Platform Hub, but exclusive to landable surfaces and does not have any of the space platform controls. Connects to cargo bays to increase capacity. |
+| CargoPodPrototype | cargo-pod | A small visual rocket that is launched from Space Platforms when they drop or transfer items. Has an inventory, knows the container (Cargo Bay) that spawned it, and has a trigger when it impacts. |
 | CargoWagonPrototype | cargo-wagon | A cargo wagon |
 | CarPrototype | car | Entity with specialized properties for acceleration, braking, and turning |
 | ChainActiveTriggerPrototype | chain-active-trigger | Jumps between targets and applies a Trigger to them |
@@ -76,8 +76,8 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | DecorativePrototype | optimized-decorative | Simple decorative purpose objects on the map, they have no health and some of them are removed when the player builds over |
 | DelayedActiveTriggerPrototype | delayed-active-trigger | Delays the delivery of triggered effect by some number of ticks |
 | DeliverByRobotsAchievementPrototype | deliver-by-robots-achievement | This prototype is used for receiving an achievement, when the player requests and receives enough items using logistic robots |
-| DeliverCategory | deliver-category | **[NO DESC]** |
-| DeliverImpactCombination | deliver-impact-combination | **[NO DESC]** |
+| DeliverCategory | deliver-category | Only has a name and a type. Seems to be intended to transfer something from one thing to another. |
+| DeliverImpactCombination | deliver-impact-combination | Can trigger an effect on impact. |
 | DepleteResourceAchievementPrototype | deplete-resource-achievement | This prototype is used for receiving an achievement when a resource entity is depleted |
 | DestroyCliffAchievementPrototype | destroy-cliff-achievement | **[NO DESC]** |
 | DisplayPanelPrototype | display-panel | Entity that display a signal icon and some text, either configured directly in the entity or through the circuit network |
@@ -135,7 +135,7 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | InfinityContainerPrototype | infinity-container | A generic container, such as a chest, that can spawn or void items and interact with the logistics network |
 | InfinityPipePrototype | infinity-pipe | This entity produces or consumes fluids |
 | InserterPrototype | inserter | An inserter |
-| InventoryBonusEquipmentPrototype | inventory-bonus-equipment | **[NO DESC]** |
+| InventoryBonusEquipmentPrototype | inventory-bonus-equipment | An item that can be placed into an equipment grid. |
 | ItemEntityPrototype | item-entity | The entity used for items on the ground |
 | ItemGroup | item-group | An item group |
 | ItemPrototype | item | Possible configuration for all items |
@@ -149,7 +149,7 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | LabPrototype | lab | A lab |
 | LampPrototype | lamp | A lamp to provide light, using energy |
 | LandMinePrototype | land-mine | A land mine |
-| LaneSplitterPrototype | lane-splitter | **[NO DESC]** |
+| LaneSplitterPrototype | lane-splitter | A 1x1 machine meant to be placed inline with belts. Can split lanes but not push/pull into non-belt entities. Hidden in base game. |
 | LegacyCurvedRailPrototype | legacy-curved-rail | A legacy curved rail |
 | LegacyStraightRailPrototype | legacy-straight-rail | A legacy straight rail |
 | LightningAttractorPrototype | lightning-attractor | Absorbs lightning and optionally converts it into electricity |
@@ -181,7 +181,7 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | PipePrototype | pipe | An entity to transport fluids over a distance and between machines |
 | PipeToGroundPrototype | pipe-to-ground | A pipe to ground |
 | PlaceEquipmentAchievementPrototype | place-equipment-achievement | **[NO DESC]** |
-| PlanetPrototype | planet | **[NO DESC]** |
+| PlanetPrototype | planet | Includes properties pertaining to where on the map it appears, what kind of pollution it uses, ambient sounds, effects on the players, whether machines freeze, and map generation settings. |
 | PlantPrototype | plant | **[NO DESC]** |
 | PlayerDamagedAchievementPrototype | player-damaged-achievement | This prototype is used for receiving an achievement when the player receives damage |
 | PlayerPortPrototype | player-port | Deprecated in 2 |
@@ -237,8 +237,8 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | SolarPanelPrototype | solar-panel | A solar panel |
 | SoundPrototype | sound | Specifies a sound that can be used with SoundPath at runtime |
 | SpaceConnectionDistanceTraveledAchievementPrototype | space-connection-distance-traveled-achievement | **[NO DESC]** |
-| SpaceConnectionPrototype | space-connection | **[NO DESC]** |
-| SpaceLocationPrototype | space-location | A space location, such as a planet or the solar system edge |
+| SpaceConnectionPrototype | space-connection | The route between one body and another on the space map. Traveled by Space Platforms. Has asteroid spawn settings and length |
+| SpaceLocationPrototype | space-location | A space location, such as a planet or the solar system edge. Gravity_pull is defined here. |
 | SpacePlatformHubPrototype | space-platform-hub | **[NO DESC]** |
 | SpacePlatformStarterPackPrototype | space-platform-starter-pack | **[NO DESC]** |
 | SpectatorControllerPrototype | spectator-controller | Properties of the spectator controller |
@@ -252,8 +252,8 @@ Entries marked **[NO DESC]** have blank descriptions in the API — fill these i
 | StickerPrototype | sticker | Entity that sticks to another entity, and damages/slows it |
 | StorageTankPrototype | storage-tank | A storage tank |
 | StraightRailPrototype | straight-rail | A straight rail |
-| SurfacePropertyPrototype | surface-property | **[NO DESC]** |
-| SurfacePrototype | surface | **[NO DESC]** |
+| SurfacePropertyPrototype | surface-property | A property with units and and a default value that can be checked against for planet-specific recipes and structures. Native ones include air pressure, gravity, temperature, and electric field strength. |
+| SurfacePrototype | surface | Owned by landable surfaces. Contains a list of surface properties. |
 | TechnologyPrototype | technology | A technology |
 | TemporaryContainerPrototype | temporary-container | A container that can automatically destroy itself when it is emptied or after it has existed for a certain time |
 | ThrusterPrototype | thruster | Consumes two fluids as fuel to produce thrust for a space platform |
