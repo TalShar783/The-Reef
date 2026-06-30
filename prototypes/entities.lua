@@ -108,3 +108,22 @@ hatch.surface_conditions = {
 }
 
 data:extend({ hatch })
+
+-- Advanced Cargo Hatch (4-slot multi-item)
+-- Same 2×2 footprint and surface_conditions as the basic hatch.
+-- inventory_size = 4: one buffer slot per configurable filter item.
+-- Placeholder graphics: steel chest. Replace with custom art before release.
+
+local adv_hatch = table.deepcopy(data.raw["container"]["iron-chest"])
+adv_hatch.name              = "advanced-cargo-hatch"
+adv_hatch.icon              = "__base__/graphics/icons/steel-chest.png"
+adv_hatch.icon_size         = 64
+adv_hatch.inventory_size    = 4
+adv_hatch.minable           = { mining_time = 0.5, result = "advanced-cargo-hatch" }
+adv_hatch.collision_box     = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
+adv_hatch.selection_box     = {{ -1,   -1   }, { 1,   1   }}
+adv_hatch.dying_explosion   = nil
+adv_hatch.corpse            = nil
+adv_hatch.surface_conditions = {{ property = "gravity", min = 0, max = 0 }}
+
+data:extend({ adv_hatch })

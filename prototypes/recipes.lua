@@ -187,6 +187,27 @@ data:extend({
     },
   },
 
+  -- Advanced Cargo Hatch (building recipe) — upgrade of the basic hatch.
+  {
+    type     = "recipe",
+    name     = "advanced-cargo-hatch",
+    icon     = "__base__/graphics/icons/steel-chest.png",
+    icon_size = 64,
+    categories = { "crafting" },
+    subgroup = "the-reef-machines",
+    order    = "z[hatch]-b",
+    enabled  = false,
+    energy_required = 10,
+    ingredients = {
+      { type = "item", name = "cargo-hatch",            amount = 1  },
+      { type = "item", name = "steel-plate",            amount = 10 },
+      { type = "item", name = "advanced-circuit",       amount = 5  },
+    },
+    results = {
+      { type = "item", name = "advanced-cargo-hatch", amount = 1 },
+    },
+  },
+
   -- Basic PMR (building recipe) — crafted in an assembling machine.
   {
     type     = "recipe",

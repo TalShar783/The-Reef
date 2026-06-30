@@ -24,6 +24,30 @@ data:extend({
     },
   },
 
+  -- Advanced Cargo Hatch: 4-slot multi-item version. Prerequisite: basic hatch.
+  {
+    type      = "technology",
+    name      = "the-reef-advanced-cargo-hatch",
+    icon      = "__base__/graphics/icons/steel-chest.png",
+    icon_size = 64,
+    prerequisites = { "the-reef-cargo-hatch" },
+    unit = {
+      count = 300,
+      ingredients = {
+        { "automation-science-pack",       1 },
+        { "logistic-science-pack",         1 },
+        { "chemical-science-pack",         1 },
+        { "space-science-pack",            1 },
+        { "electromagnetic-science-pack",  1 },
+        { "dilithium-science-pack",        1 },
+      },
+      time = 60,
+    },
+    effects = {
+      { type = "unlock-recipe", recipe = "advanced-cargo-hatch" },
+    },
+  },
+
   -- Repeatable upgrade: each level allows one additional Cargo Hatch per platform.
   -- Handled entirely by script (on_research_finished increments the per-force limit).
   -- Cost scales with level: 250 * L packs per level.
