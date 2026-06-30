@@ -39,8 +39,9 @@ pmr.module_slots              = 0
 pmr.circuit_connector         = nil
 pmr.circuit_wire_max_distance = 0
 
--- Replace assembler graphics with requester-chest sprite + orange in/out arrows
--- that appear in alt-mode (entity-info-icon-above render layer).
+-- Replace assembler graphics with requester-chest sprite.
+-- Directional arrows deferred to companion loader feature (loader-1x1 entities
+-- placed on either side will provide directional sprites natively).
 pmr.graphics_set = {
     animation = {
         filename    = "__base__/graphics/entity/logistic-chest/requester-chest.png",
@@ -49,34 +50,6 @@ pmr.graphics_set = {
         shift       = util.by_pixel(0, -2),
         scale       = 0.5,
         frame_count = 1,
-    },
-    working_visualisations = {
-        -- Input indicator: orange arrow pointing right, left of machine.
-        {
-            render_layer = "entity-info-icon-above",
-            always_draw  = true,
-            animation = {
-                filename    = "__core__/graphics/arrows/hint-orange-arrow-right.png",
-                width       = 38,
-                height      = 73,
-                scale       = 0.3,
-                shift       = util.by_pixel(-20, 0),
-                frame_count = 1,
-            },
-        },
-        -- Output indicator: orange arrow pointing right, right of machine.
-        {
-            render_layer = "entity-info-icon-above",
-            always_draw  = true,
-            animation = {
-                filename    = "__core__/graphics/arrows/hint-orange-arrow-left.png",
-                width       = 43,
-                height      = 73,
-                scale       = 0.3,
-                shift       = util.by_pixel(20, 0),
-                frame_count = 1,
-            },
-        },
     },
 }
 

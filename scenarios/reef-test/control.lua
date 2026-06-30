@@ -14,6 +14,7 @@ end
 local function give_items(player)
     -- Reef items
     give(player, "cargo-hatch",                  10)
+    give(player, "advanced-cargo-hatch",         10)
     give(player, "basic-pmr",                     5)
     give(player, "dilithium-reactor-1",           5)
     give(player, "dilithium-fuel-cell",          50)
@@ -93,10 +94,29 @@ local function try_create_platform(player)
         hub.insert{ name = "firearm-magazine",   count = 200 }
         hub.insert{ name = "starship-scrap",     count = 100 }
         hub.insert{ name = "dilithium-crystal",  count = 50  }
+        -- Ores for PMR test recipes (pmr-green-circuits, pmr-grenades, etc.)
+        hub.insert{ name = "iron-ore",           count = 500 }
+        hub.insert{ name = "copper-ore",         count = 500 }
+        hub.insert{ name = "coal",               count = 100 }
+    end
+
+    -- Power: 4 solar panels + 2 accumulators for sustained PMR operation.
+    -- Positions chosen to fit within the 11×11 foundation, clear of the hub.
+    for _, pos in ipairs({ {-3.5, -3.5}, {3.5, -3.5}, {-3.5, 3.5}, {3.5, 3.5} }) do
+        surface.create_entity{
+            name = "solar-panel", position = pos, force = force,
+            create_build_effect_smoke = false,
+        }
+    end
+    for _, pos in ipairs({ {0, -4}, {0, 4} }) do
+        surface.create_entity{
+            name = "accumulator", position = pos, force = force,
+            create_build_effect_smoke = false,
+        }
     end
 
     -- Pre-place cargo hatch + inserter
-    -- Hub occupies ±4 tiles from centre; hatch at 6 clears it
+    -- Hub occupies ±2 tiles from centre; hatch at x=6 clears it
     surface.create_entity{
         name = "cargo-hatch", position = { 6, 0 }, force = force,
         create_build_effect_smoke = false,
@@ -107,8 +127,14 @@ local function try_create_platform(player)
         create_build_effect_smoke = false,
     }
 
+    -- Pre-place PMR south of hub for easy recipe testing
+    surface.create_entity{
+        name = "basic-pmr", position = { 0, 4 }, force = force,
+        create_build_effect_smoke = false,
+    }
+
     player.teleport({ 0, 3 }, surface)
-    player.print("[The Reef Test] Platform created. Hub stocked. Cargo hatch at (3,0).")
+    player.print("[The Reef Test] Platform created. Hub stocked with ores. PMR at (0,4). Solar panels placed.")
 end
 
 local function setup(player)
