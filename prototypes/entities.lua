@@ -182,10 +182,23 @@ adv_hatch.name                 = "advanced-cargo-hatch"
 adv_hatch.icon                 = "__base__/graphics/icons/steel-chest.png"
 adv_hatch.icon_size            = 64
 adv_hatch.inventory_size_bonus = 20
-adv_hatch.allow_unloading      = true
 adv_hatch.minable              = { mining_time = 0.5, result = "advanced-cargo-hatch" }
 adv_hatch.collision_box        = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
 adv_hatch.selection_box        = {{ -1,   -1   }, { 1,   1   }}
 adv_hatch.surface_conditions   = {{ property = "gravity", min = 0, max = 0 }}
+
+-- Replace cargo-bay visuals with steel-chest placeholder.
+adv_hatch.graphics_set = {
+    animation = {
+        filename    = "__base__/graphics/entity/steel-chest/steel-chest.png",
+        priority    = "extra-high",
+        width       = 64,
+        height      = 80,
+        shift       = util.by_pixel(-0.25, -0.5),
+        scale       = 0.5,
+        frame_count = 1,
+    },
+}
+adv_hatch.platform_graphics_set = nil
 
 data:extend({ adv_hatch })
