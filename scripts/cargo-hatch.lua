@@ -35,7 +35,7 @@ local function get_range(force)
 end
 
 local function get_platform_hatch_count(surface)
-    return #surface.find_entities_filtered({ name = "cargo-hatch" })
+    return #surface.find_entities_filtered({ name = { "cargo-hatch", "advanced-cargo-hatch" } })
 end
 
 local function get_hub(surface)
@@ -78,7 +78,8 @@ end
 function M.on_pre_build(event)
     local player = game.players[event.player_index]
     local cursor = player.cursor_stack
-    if not (cursor and cursor.valid_for_read and cursor.name == "cargo-hatch") then return end
+    if not (cursor and cursor.valid_for_read) then return end
+    if cursor.name ~= "cargo-hatch" and cursor.name ~= "advanced-cargo-hatch" then return end
 
     local surface = player.surface
     if not surface.platform then return end
@@ -112,13 +113,13 @@ function M.on_pre_build(event)
     end
 end
 
-local function refund_hatch(event, surface, pos)
+local function refund_hatch(event, surface, pos, item_name)
     if event.player_index then
-        game.players[event.player_index].insert({ name = "cargo-hatch", count = 1 })
+        game.players[event.player_index].insert({ name = item_name, count = 1 })
     else
         surface.spill_item_stack({
             position                      = pos,
-            stack                         = { name = "cargo-hatch", count = 1 },
+            stack                         = { name = item_name, count = 1 },
             enable_looted                 = false,
             allow_belts                   = false,
             use_start_position_on_failure = true,
@@ -126,20 +127,23 @@ local function refund_hatch(event, surface, pos)
     end
 end
 
+local HATCH_NAMES = { ["cargo-hatch"] = true, ["advanced-cargo-hatch"] = true }
+
 function M.on_built(event)
     local entity = event.entity or event.created_entity
-    if not entity or entity.name ~= "cargo-hatch" then return end
+    if not entity or not HATCH_NAMES[entity.name] then return end
 
     local surface = entity.surface
     if surface.platform then
-        local pos = entity.position
+        local pos  = entity.position
+        local item = entity.name
 
         local hub = get_hub(surface)
         if hub then
             local range = get_range(entity.force)
             if tile_distance(pos, hub.position) > range then
                 entity.destroy({ raise_destroy = false })
-                refund_hatch(event, surface, pos)
+                refund_hatch(event, surface, pos, item)
                 return
             end
         end
@@ -148,7 +152,7 @@ function M.on_built(event)
         local count = get_platform_hatch_count(surface)
         if count > limit then
             entity.destroy({ raise_destroy = false })
-            refund_hatch(event, surface, pos)
+            refund_hatch(event, surface, pos, item)
             return
         end
     end
@@ -158,7 +162,7 @@ end
 
 function M.on_removed(event)
     local entity = event.entity
-    if entity and entity.name == "cargo-hatch" then unregister(entity) end
+    if entity and HATCH_NAMES[entity.name] then unregister(entity) end
 end
 
 -- ─── Research handler ────────────────────────────────────────────────────────
