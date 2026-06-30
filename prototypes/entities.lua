@@ -32,13 +32,12 @@ pmr.fixed_recipe     = nil  -- assembling-machine-1 has no fixed recipe but clea
 data:extend({ pmr })
 
 -- Dilithium Reactor T1
--- Phase 4: data-only. Uses electric-energy-interface as the base — this is the
--- correct foundation for an entity that injects electricity into the grid via script.
--- Static 20MW production for now; Phase 5 scripting makes it conditional on
--- Dilithium Fuel Cell + ice consumption.
+-- Burner-generator base: consumes Dilithium Fuel Cells from a built-in fuel slot
+-- and outputs to the electric network. No scripting required.
+-- 1 cell = 3GJ at 100% effectivity → 600s at 5MW.
 -- Size: 2x2. Placeholder graphics: accumulator (tinted). Replace before release.
 
-local reactor = table.deepcopy(data.raw["electric-energy-interface"]["electric-energy-interface"])
+local reactor = table.deepcopy(data.raw["burner-generator"]["burner-generator"])
 reactor.name          = "dilithium-reactor-1"
 reactor.icon          = "__base__/graphics/icons/nuclear-reactor.png"
 reactor.icon_size     = 64
@@ -46,16 +45,20 @@ reactor.hidden        = false
 reactor.subgroup      = "the-reef-machines"
 reactor.order         = "b[reactor]"
 reactor.minable       = { mining_time = 1, result = "dilithium-reactor-1" }
-reactor.collision_box = {{ -0.9, -0.9 }, { 0.9, 0.9 }}   -- 2x2, inset to allow adjacent placement
+reactor.collision_box = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
 reactor.selection_box = {{ -1,   -1   }, { 1,   1   }}
-reactor.energy_source = {
-    type              = "electric",
-    buffer_capacity   = "2MJ",
-    usage_priority    = "primary-output",
-    output_flow_limit = "20MW",
+reactor.max_power_output = "5MW"
+reactor.surface_conditions = {{ property = "gravity", min = 0, max = 0 }}
+reactor.burner = {
+    type               = "burner",
+    fuel_categories    = { "dilithium" },
+    effectivity        = 1,
+    fuel_inventory_size = 1,
 }
-reactor.energy_production = "20MW"
-reactor.energy_usage      = "0kW"
+reactor.energy_source = {
+    type           = "electric",
+    usage_priority = "primary-output",
+}
 
 data:extend({ reactor })
 

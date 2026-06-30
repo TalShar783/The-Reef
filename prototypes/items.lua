@@ -1,6 +1,8 @@
 -- Icons are placeholders; replace with final art before release.
 
 data:extend({
+  { type = "fuel-category", name = "dilithium" },
+
   -- ── Materials (the-reef-materials row) ──────────────────────────────────
 
   {
@@ -39,6 +41,8 @@ data:extend({
     subgroup      = "the-reef-materials",
     order         = "d[fuel-cell]",
     stack_size    = 50,
+    fuel_category = "dilithium",
+    fuel_value    = "3GJ",
   },
   {
     type      = "tool",
