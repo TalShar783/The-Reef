@@ -61,7 +61,11 @@ script.on_event(defines.events.on_entity_died,                 dispatch_removed,
 script.on_event(defines.events.script_raised_destroy,          dispatch_removed, managed_entity_filter)
 
 -- Sync and GUI
-script.on_event(defines.events.on_tick,                cargo_hatch.on_tick)
+-- on_tick only accepts one handler; both modules share a combined dispatcher.
+script.on_event(defines.events.on_tick, function(event)
+    cargo_hatch.on_tick(event)
+    pmr.on_tick(event)
+end)
 script.on_event(defines.events.on_gui_opened,       cargo_hatch.on_gui_opened)
 script.on_event(defines.events.on_gui_closed,       cargo_hatch.on_gui_closed)
 script.on_event(defines.events.on_gui_click,           cargo_hatch.on_gui_click)

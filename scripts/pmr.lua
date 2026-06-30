@@ -1,85 +1,106 @@
--- Basic PMR belt I/O.
+-- Basic PMR belt I/O — on-tick item transfer.
 --
--- The PMR has no native belt connection (plain assembling-machine deepcopy).
--- Two invisible pmr-belt-loader entities give it belt I/O: one on the south
--- tile in "input" mode, one on the north tile in "output" mode.
+-- loader-1x1 geometry (belt_distance hardcoded to 0) means a loader must sit
+-- ON the belt tile and reach to an adjacent container; it cannot sit on the PMR
+-- tile and reach out to a belt. To get zero-visible-junction belt I/O the
+-- approach is on-tick scripting: each sync interval, pull items from the belt
+-- on the south tile into the PMR's input inventory, and push items from the
+-- PMR's output inventory onto the belt on the north tile.
 --
--- Direction convention: for both loader_types, `direction` points AWAY from
--- the connected container, toward the continuing belt.
---   south (input)  loader: direction = south (arrow points further south, container north = PMR)
---   north (output) loader: direction = north (arrow points further north, container south = PMR)
---
--- Fixed south-in/north-out for now. Full rotation deferred until PMR sprite
--- can actually be rotated.
+-- Fixed south-in/north-out for now. Rotation deferred until PMR has a
+-- rotatable sprite.
 
 local M = {}
 
-local SOUTH_OFFSET = { 0, 1 }
-local NORTH_OFFSET = { 0, -1 }
+local SYNC_INTERVAL = 6   -- ticks between transfers (~10/sec, matches fast inserter)
 
-local BELT_TYPES = { "transport-belt", "underground-belt", "splitter", "loader", "loader-1x1", "linked-belt" }
+local SOUTH = { 0,  1 }
+local NORTH = { 0, -1 }
+
+-- ─── Storage ─────────────────────────────────────────────────────────────────
 
 function M.on_init()
-    storage.pmr_loaders = storage.pmr_loaders or {}   -- unit_number -> { input = LuaEntity, output = LuaEntity }
+    storage.pmrs = storage.pmrs or {}   -- unit_number -> LuaEntity
 end
 
--- ─── Loader spawn / despawn ──────────────────────────────────────────────────
-
-local function spawn_loader(pmr, offset, direction, loader_type)
-    local surface = pmr.surface
-    local pos = { x = pmr.position.x + offset[1], y = pmr.position.y + offset[2] }
-
-    -- A real belt run may already occupy this tile; clear it so the loader
-    -- can take its place. The loader is belt-connectable, so the run still
-    -- functions — the loader is the final segment bridging belt to machine.
-    local existing = surface.find_entities_filtered({ position = pos, type = BELT_TYPES })[1]
-    if existing then existing.destroy() end
-
-    local loader = surface.create_entity{
-        name      = "pmr-belt-loader",
-        position  = pos,
-        direction = direction,
-        force     = pmr.force,
-        create_build_effect_smoke = false,
-    }
-    if not loader then return nil end
-
-    loader.loader_type  = loader_type
-    loader.destructible = false
-
-    return loader
-end
-
-local function spawn_pmr_loaders(entity)
-    storage.pmr_loaders = storage.pmr_loaders or {}
-    storage.pmr_loaders[entity.unit_number] = {
-        -- direction always points AWAY from the PMR (toward the continuing belt)
-        input  = spawn_loader(entity, SOUTH_OFFSET, defines.direction.south, "input"),
-        output = spawn_loader(entity, NORTH_OFFSET, defines.direction.north, "output"),
-    }
-end
-
-local function destroy_pmr_loaders(unit_number)
-    storage.pmr_loaders = storage.pmr_loaders or {}
-    local pair = storage.pmr_loaders[unit_number]
-    if not pair then return end
-    if pair.input  and pair.input.valid  then pair.input.destroy()  end
-    if pair.output and pair.output.valid then pair.output.destroy() end
-    storage.pmr_loaders[unit_number] = nil
-end
-
--- ─── Build / remove ──────────────────────────────────────────────────────────
+-- ─── Registration ────────────────────────────────────────────────────────────
 
 function M.on_built(event)
     local entity = event.entity or event.created_entity
     if not entity or entity.name ~= "basic-pmr" then return end
-    spawn_pmr_loaders(entity)
+    storage.pmrs = storage.pmrs or {}
+    storage.pmrs[entity.unit_number] = entity
 end
 
 function M.on_removed(event)
     local entity = event.entity
     if not entity or entity.name ~= "basic-pmr" then return end
-    destroy_pmr_loaders(entity.unit_number)
+    storage.pmrs = storage.pmrs or {}
+    storage.pmrs[entity.unit_number] = nil
+end
+
+-- ─── Belt helpers ─────────────────────────────────────────────────────────────
+
+local function adjacent_belt(entity, offset)
+    local pos = entity.position
+    local area = {
+        { pos.x + offset[1] - 0.5, pos.y + offset[2] - 0.5 },
+        { pos.x + offset[1] + 0.5, pos.y + offset[2] + 0.5 },
+    }
+    return entity.surface.find_entities_filtered({ area = area, type = "transport-belt" })[1]
+end
+
+-- ─── Tick ────────────────────────────────────────────────────────────────────
+
+local function sync(entity)
+    if not entity.valid then return false end
+
+    local inv_in  = entity.get_inventory(defines.inventory.assembling_machine_input)
+    local inv_out = entity.get_inventory(defines.inventory.assembling_machine_output)
+
+    -- South belt → PMR input
+    local south_belt = adjacent_belt(entity, SOUTH)
+    if south_belt then
+        for lane = 1, 2 do
+            local tl = south_belt.get_transport_line(lane)
+            for name, _ in pairs(tl.get_contents()) do
+                if inv_in.can_insert({ name = name, count = 1 }) then
+                    local n = inv_in.insert({ name = name, count = 1 })
+                    if n > 0 then tl.remove_item({ name = name, count = 1 }) end
+                end
+            end
+        end
+    end
+
+    -- PMR output → north belt
+    local north_belt = adjacent_belt(entity, NORTH)
+    if north_belt then
+        for i = 1, #inv_out do
+            local stack = inv_out[i]
+            if stack.valid_for_read then
+                for lane = 1, 2 do
+                    local tl = north_belt.get_transport_line(lane)
+                    if tl.can_insert_at_back() then
+                        tl.insert_at_back(1, { name = stack.name, count = 1 })
+                        inv_out.remove({ name = stack.name, count = 1 })
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    return true
+end
+
+function M.on_tick(event)
+    if event.tick % SYNC_INTERVAL ~= 0 then return end
+    storage.pmrs = storage.pmrs or {}
+    for uid, entity in pairs(storage.pmrs) do
+        if not sync(entity) then
+            storage.pmrs[uid] = nil
+        end
+    end
 end
 
 return M
