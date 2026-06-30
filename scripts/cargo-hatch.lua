@@ -1,19 +1,13 @@
 -- Cargo Hatch script.
 --
--- Handles two entity types:
---   "cargo-hatch"          — 1-slot buffer, single configured item
---   "advanced-cargo-hatch" — 4-slot buffer, up to 4 independently configured items
---
--- Both share the same limit, range, and mode-toggle behaviour.
--- storage.hatches[unit_number]:
---   basic:    { entity, item, mode }
---   advanced: { entity, items = {[1..4]}, mode }
+-- Handles "cargo-hatch" only (the basic single-item variant).
+-- "advanced-cargo-hatch" is a cargo-bay type and manages itself natively —
+-- it IS the platform hub inventory and needs no scripted sync.
 
 local SYNC_INTERVAL   = 30
 local BASE_LIMIT      = 1
 local BASE_RANGE      = 20
 local RANGE_PER_LEVEL = 5
-local NUM_ADV_SLOTS   = 4
 
 local M = {}
 
@@ -41,9 +35,7 @@ local function get_range(force)
 end
 
 local function get_platform_hatch_count(surface)
-    local basic    = surface.find_entities_filtered({ name = "cargo-hatch" })
-    local advanced = surface.find_entities_filtered({ name = "advanced-cargo-hatch" })
-    return #basic + #advanced
+    return #surface.find_entities_filtered({ name = "cargo-hatch" })
 end
 
 local function get_hub(surface)
@@ -60,19 +52,11 @@ end
 -- ─── Registration ────────────────────────────────────────────────────────────
 
 local function register(entity)
-    if entity.name == "advanced-cargo-hatch" then
-        storage.hatches[entity.unit_number] = {
-            entity = entity,
-            items  = {},
-            mode   = "extract",
-        }
-    else
-        storage.hatches[entity.unit_number] = {
-            entity = entity,
-            item   = nil,
-            mode   = "extract",
-        }
-    end
+    storage.hatches[entity.unit_number] = {
+        entity = entity,
+        item   = nil,
+        mode   = "extract",
+    }
 end
 
 local function unregister(entity)
@@ -87,10 +71,6 @@ local function unregister(entity)
     storage.hatches[entity.unit_number] = nil
 end
 
-local function is_hatch(name)
-    return name == "cargo-hatch" or name == "advanced-cargo-hatch"
-end
-
 -- ─── Build validation ────────────────────────────────────────────────────────
 
 -- on_pre_build fires BEFORE the entity is created, giving us the chance to
@@ -98,7 +78,7 @@ end
 function M.on_pre_build(event)
     local player = game.players[event.player_index]
     local cursor = player.cursor_stack
-    if not (cursor and cursor.valid_for_read and is_hatch(cursor.name)) then return end
+    if not (cursor and cursor.valid_for_read and cursor.name == "cargo-hatch") then return end
 
     local surface = player.surface
     if not surface.platform then return end
@@ -132,13 +112,13 @@ function M.on_pre_build(event)
     end
 end
 
-local function refund_hatch(event, surface, pos, item_name)
+local function refund_hatch(event, surface, pos)
     if event.player_index then
-        game.players[event.player_index].insert({ name = item_name, count = 1 })
+        game.players[event.player_index].insert({ name = "cargo-hatch", count = 1 })
     else
         surface.spill_item_stack({
             position                      = pos,
-            stack                         = { name = item_name, count = 1 },
+            stack                         = { name = "cargo-hatch", count = 1 },
             enable_looted                 = false,
             allow_belts                   = false,
             use_start_position_on_failure = true,
@@ -148,7 +128,7 @@ end
 
 function M.on_built(event)
     local entity = event.entity or event.created_entity
-    if not entity or not is_hatch(entity.name) then return end
+    if not entity or entity.name ~= "cargo-hatch" then return end
 
     local surface = entity.surface
     if surface.platform then
@@ -159,7 +139,7 @@ function M.on_built(event)
             local range = get_range(entity.force)
             if tile_distance(pos, hub.position) > range then
                 entity.destroy({ raise_destroy = false })
-                refund_hatch(event, surface, pos, entity.name)
+                refund_hatch(event, surface, pos)
                 return
             end
         end
@@ -168,7 +148,7 @@ function M.on_built(event)
         local count = get_platform_hatch_count(surface)
         if count > limit then
             entity.destroy({ raise_destroy = false })
-            refund_hatch(event, surface, pos, entity.name)
+            refund_hatch(event, surface, pos)
             return
         end
     end
@@ -178,7 +158,7 @@ end
 
 function M.on_removed(event)
     local entity = event.entity
-    if entity and is_hatch(entity.name) then unregister(entity) end
+    if entity and entity.name == "cargo-hatch" then unregister(entity) end
 end
 
 -- ─── Research handler ────────────────────────────────────────────────────────
@@ -206,29 +186,6 @@ local function get_cargo_inventory(surface)
     return nil
 end
 
--- ─── Sync helpers ────────────────────────────────────────────────────────────
-
-local function get_active_items(data)
-    if data.items then
-        local result = {}
-        for _, v in pairs(data.items) do
-            if v then result[#result + 1] = v end
-        end
-        return result
-    elseif data.item then
-        return { data.item }
-    end
-    return {}
-end
-
-local function is_configured(data, item_name)
-    if data.item then return data.item == item_name end
-    for _, v in pairs(data.items) do
-        if v == item_name then return true end
-    end
-    return false
-end
-
 -- ─── Buffer flush ────────────────────────────────────────────────────────────
 
 local function flush_buffer(data)
@@ -249,42 +206,36 @@ end
 
 local function sync(data)
     local hatch = data.entity
-    if not hatch.valid then return end
-
-    local active = get_active_items(data)
-    if #active == 0 then return end
+    if not hatch.valid or not data.item then return end
 
     local cargo = get_cargo_inventory(hatch.surface)
     if not cargo then return end
 
-    local inv = hatch.get_inventory(defines.inventory.chest)
+    local inv  = hatch.get_inventory(defines.inventory.chest)
+    local item = data.item
 
-    -- Flush any item that is not in the configured set back to the hub.
     for i = 1, #inv do
         local stack = inv[i]
-        if stack.valid_for_read and not is_configured(data, stack.name) then
+        if stack.valid_for_read and stack.name ~= item then
             local moved = cargo.insert(stack)
             stack.count = stack.count - moved
         end
     end
 
-    -- Extract or insert each configured item independently.
-    for _, item in ipairs(active) do
-        if data.mode == "extract" then
-            if inv.get_item_count(item) == 0 then
-                local available = cargo.get_item_count(item)
-                if available > 0 then
-                    local stack_size = prototypes.item[item].stack_size
-                    local n = cargo.remove({ name = item, count = math.min(stack_size, available) })
-                    inv.insert({ name = item, count = n })
-                end
+    if data.mode == "extract" then
+        if inv.get_item_count(item) == 0 then
+            local available = cargo.get_item_count(item)
+            if available > 0 then
+                local stack_size = prototypes.item[item].stack_size
+                local n = cargo.remove({ name = item, count = math.min(stack_size, available) })
+                inv.insert({ name = item, count = n })
             end
-        else
-            local count = inv.get_item_count(item)
-            if count > 0 then
-                local inserted = cargo.insert({ name = item, count = count })
-                inv.remove({ name = item, count = inserted })
-            end
+        end
+    else
+        local count = inv.get_item_count(item)
+        if count > 0 then
+            local inserted = cargo.insert({ name = item, count = count })
+            inv.remove({ name = item, count = inserted })
         end
     end
 end
@@ -300,13 +251,10 @@ local function build_gui(player, data)
     local rel = player.gui.relative
     if rel["cargo-hatch-config"] then rel["cargo-hatch-config"].destroy() end
 
-    local is_advanced = data.entity.name == "advanced-cargo-hatch"
-
     local frame = rel.add({
         type      = "frame",
         name      = "cargo-hatch-config",
-        caption   = { is_advanced and "entity-name.advanced-cargo-hatch"
-                                   or "entity-name.cargo-hatch" },
+        caption   = { "entity-name.cargo-hatch" },
         direction = "vertical",
         anchor    = {
             gui      = defines.relative_gui_type.container_gui,
@@ -314,7 +262,6 @@ local function build_gui(player, data)
         },
     })
 
-    -- Capacity and range display (only on space platforms)
     local surface = data.entity.surface
     if surface.platform then
         local limit = get_limit(data.entity.force)
@@ -335,35 +282,20 @@ local function build_gui(player, data)
         })
     end
 
-    -- Item filter(s)
-    local filter_row = frame.add({ type = "flow", direction = "horizontal" })
-    filter_row.style.vertical_align = "center"
+    local row1 = frame.add({ type = "flow", direction = "horizontal" })
+    row1.style.vertical_align = "center"
+    row1.add({ type = "label", caption = { "cargo-hatch-gui.item-label" } })
+    row1.add({
+        type      = "choose-elem-button",
+        name      = "cargo-hatch-item-picker",
+        elem_type = "item",
+        item      = data.item or nil,
+    })
 
-    if is_advanced then
-        filter_row.add({ type = "label", caption = { "cargo-hatch-gui.items-label" } })
-        for i = 1, NUM_ADV_SLOTS do
-            filter_row.add({
-                type      = "choose-elem-button",
-                name      = "advanced-hatch-item-" .. i,
-                elem_type = "item",
-                item      = data.items[i] or nil,
-            })
-        end
-    else
-        filter_row.add({ type = "label", caption = { "cargo-hatch-gui.item-label" } })
-        filter_row.add({
-            type      = "choose-elem-button",
-            name      = "cargo-hatch-item-picker",
-            elem_type = "item",
-            item      = data.item or nil,
-        })
-    end
-
-    -- Mode toggle (shared for both types)
-    local mode_row = frame.add({ type = "flow", direction = "horizontal" })
-    mode_row.style.vertical_align = "center"
-    mode_row.add({ type = "label", caption = { "cargo-hatch-gui.mode-label" } })
-    mode_row.add({
+    local row2 = frame.add({ type = "flow", direction = "horizontal" })
+    row2.style.vertical_align = "center"
+    row2.add({ type = "label", caption = { "cargo-hatch-gui.mode-label" } })
+    row2.add({
         type    = "button",
         name    = "cargo-hatch-mode-toggle",
         caption = data.mode == "extract"
@@ -375,7 +307,7 @@ end
 function M.on_gui_opened(event)
     if event.gui_type ~= defines.gui_type.entity then return end
     local entity = event.entity
-    if not entity or not is_hatch(entity.name) then return end
+    if not entity or entity.name ~= "cargo-hatch" then return end
 
     local player = game.players[event.player_index]
     local data   = storage.hatches[entity.unit_number]
@@ -388,7 +320,7 @@ end
 function M.on_gui_closed(event)
     if event.gui_type ~= defines.gui_type.entity then return end
     local entity = event.entity
-    if not entity or not is_hatch(entity.name) then return end
+    if not entity or entity.name ~= "cargo-hatch" then return end
 
     local player = game.players[event.player_index]
     local frame  = player.gui.relative["cargo-hatch-config"]
@@ -415,26 +347,14 @@ end
 
 function M.on_gui_elem_changed(event)
     local el = event.element
-    if not el or not el.valid then return end
+    if not el or not el.valid or el.name ~= "cargo-hatch-item-picker" then return end
 
-    if el.name == "cargo-hatch-item-picker" then
-        local uid  = storage.hatch_gui[event.player_index]
-        local data = uid and storage.hatches[uid]
-        if not data then return end
-        flush_buffer(data)
-        data.item = el.elem_value
+    local uid  = storage.hatch_gui[event.player_index]
+    local data = uid and storage.hatches[uid]
+    if not data then return end
 
-    else
-        local slot = el.name:match("^advanced%-hatch%-item%-(%d+)$")
-        if slot then
-            slot = tonumber(slot)
-            local uid  = storage.hatch_gui[event.player_index]
-            local data = uid and storage.hatches[uid]
-            if not data then return end
-            flush_buffer(data)
-            data.items[slot] = el.elem_value
-        end
-    end
+    flush_buffer(data)
+    data.item = el.elem_value
 end
 
 return M
