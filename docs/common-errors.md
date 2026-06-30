@@ -296,6 +296,15 @@ when using relative GUIs.
 
 ---
 
+### `LuaTransportLine.insert_at_back` parameter order: items first, size second
+
+**Wrong:** `tl.insert_at_back(1, {name="iron-ore", count=1})` → crash "items: table expected, got number"
+**Correct:** `tl.insert_at_back({name="iron-ore", count=1}, 1)` — `items` (ItemStackIdentification) is parameter 0 (first), `belt_stack_size` (uint8, optional) is parameter 1 (second).
+**Source:** The Reef PMR output crash. The runtime-api.json lists parameters alphabetically in the `parameters` array but the `"order"` field on each entry reveals true positional order. Always check `order` values, not array position, when reading method signatures from the JSON.
+**Note:** `takes_table: false` on this method means positional call, not named-table call. The `order` field is the only reliable indicator of argument position.
+
+---
+
 ### `get_contents()` now returns an array, not a dictionary, in 2.x
 
 **Wrong:** `for name, count in pairs(inv.get_contents()) do` — `name` is a numeric index, `count` is an `ItemWithQualityCount` table, not a string/number pair. Passing the numeric key as an item name crashes with "Invalid ItemID".
