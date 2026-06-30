@@ -116,7 +116,7 @@ reactor.animation = {
     width       = 151,
     height      = 146,
     shift       = util.by_pixel(-0.25, 6),
-    scale       = 1.0,
+    scale       = 0.5,
     frame_count = 1,
 }
 reactor.idle_animation = nil
