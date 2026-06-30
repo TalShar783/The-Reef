@@ -35,7 +35,7 @@ data:extend({ pmr })
 -- Burner-generator base: consumes Dilithium Fuel Cells from a built-in fuel slot
 -- and outputs to the electric network. No scripting required.
 -- 1 cell = 3GJ at 100% effectivity → 600s at 5MW.
--- Size: 2x2. Placeholder graphics: accumulator (tinted). Replace before release.
+-- Size: 2x2. Placeholder graphics: stone furnace (2x scale). Replace before release.
 
 local reactor = table.deepcopy(data.raw["burner-generator"]["burner-generator"])
 reactor.name          = "dilithium-reactor-1"
@@ -50,15 +50,25 @@ reactor.selection_box = {{ -1,   -1   }, { 1,   1   }}
 reactor.max_power_output = "5MW"
 reactor.surface_conditions = {{ property = "gravity", min = 0, max = 0 }}
 reactor.burner = {
-    type               = "burner",
-    fuel_categories    = { "dilithium" },
-    effectivity        = 1,
+    type                = "burner",
+    fuel_categories     = { "dilithium" },
+    effectivity         = 1,
     fuel_inventory_size = 1,
 }
 reactor.energy_source = {
     type           = "electric",
     usage_priority = "primary-output",
 }
+-- Replace steam-engine animation with stone-furnace at 2x scale (2x2 footprint).
+reactor.animation = {
+    filename    = "__base__/graphics/entity/stone-furnace/stone-furnace.png",
+    width       = 151,
+    height      = 146,
+    shift       = util.by_pixel(-0.25, 6),
+    scale       = 1.0,
+    frame_count = 1,
+}
+reactor.idle_animation = nil
 
 data:extend({ reactor })
 
