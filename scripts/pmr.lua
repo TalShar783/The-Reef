@@ -1,15 +1,16 @@
 -- Basic PMR belt I/O.
 --
 -- The PMR has no native belt connection (plain assembling-machine deepcopy).
--- Two hidden loader-1x1 entities give it belt I/O: one on the south tile in
--- "input" mode (pulls from the belt south of the PMR into the PMR), one on
--- the north tile in "output" mode (pushes PMR output onto the belt north of
--- it). Both share direction = north, since "direction" means "the belt-side
--- flow direction" and the whole south->PMR->north line flows north.
+-- Two invisible pmr-belt-loader entities give it belt I/O: one on the south
+-- tile in "input" mode, one on the north tile in "output" mode.
 --
--- Fixed south-in/north-out for now. Full rotation (output always opposite
--- input, any of the 4 facings) is deferred until the PMR's chest-derived
--- sprite can actually be rotated.
+-- Direction convention: for both loader_types, `direction` points AWAY from
+-- the connected container, toward the continuing belt.
+--   south (input)  loader: direction = south (arrow points further south, container north = PMR)
+--   north (output) loader: direction = north (arrow points further north, container south = PMR)
+--
+-- Fixed south-in/north-out for now. Full rotation deferred until PMR sprite
+-- can actually be rotated.
 
 local M = {}
 
@@ -24,27 +25,27 @@ end
 
 -- ─── Loader spawn / despawn ──────────────────────────────────────────────────
 
-local function spawn_loader(pmr, offset, loader_type)
+local function spawn_loader(pmr, offset, direction, loader_type)
     local surface = pmr.surface
     local pos = { x = pmr.position.x + offset[1], y = pmr.position.y + offset[2] }
 
-    -- A real belt run may already occupy this tile (the player builds belts
-    -- right up to the machine); clear it so the loader can take its place.
-    -- The loader is itself belt-connectable, so the run still functions.
+    -- A real belt run may already occupy this tile; clear it so the loader
+    -- can take its place. The loader is belt-connectable, so the run still
+    -- functions — the loader is the final segment bridging belt to machine.
     local existing = surface.find_entities_filtered({ position = pos, type = BELT_TYPES })[1]
     if existing then existing.destroy() end
 
     local loader = surface.create_entity{
-        name      = "loader-1x1",
+        name      = "pmr-belt-loader",
         position  = pos,
-        direction = defines.direction.north,
+        direction = direction,
         force     = pmr.force,
         create_build_effect_smoke = false,
     }
     if not loader then return nil end
 
-    loader.loader_type   = loader_type
-    loader.destructible   = false
+    loader.loader_type  = loader_type
+    loader.destructible = false
 
     return loader
 end
@@ -52,8 +53,9 @@ end
 local function spawn_pmr_loaders(entity)
     storage.pmr_loaders = storage.pmr_loaders or {}
     storage.pmr_loaders[entity.unit_number] = {
-        input  = spawn_loader(entity, SOUTH_OFFSET, "input"),
-        output = spawn_loader(entity, NORTH_OFFSET, "output"),
+        -- direction always points AWAY from the PMR (toward the continuing belt)
+        input  = spawn_loader(entity, SOUTH_OFFSET, defines.direction.south, "input"),
+        output = spawn_loader(entity, NORTH_OFFSET, defines.direction.north, "output"),
     }
 end
 

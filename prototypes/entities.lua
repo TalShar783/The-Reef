@@ -186,6 +186,18 @@ adv_hatch.hatch_definitions = nil
 
 data:extend({ adv_hatch })
 
+-- Invisible loader-1x1 used by the Basic PMR for belt I/O.
+-- Deepcopy of vanilla loader-1x1 with the structure sprite removed so it renders
+-- only as a normal belt tile (belt_animation_set). Not player-buildable.
+local pmr_loader = table.deepcopy(data.raw["loader-1x1"]["loader-1x1"])
+pmr_loader.name              = "pmr-belt-loader"
+pmr_loader.structure         = nil   -- strip the gray loader housing sprite; only belt animation shows
+pmr_loader.hidden            = true
+pmr_loader.selectable_in_game = false
+pmr_loader.flags             = { "not-on-map" }
+
+data:extend({ pmr_loader })
+
 -- Proxy-container for advanced-cargo-hatch.
 -- Invisible, zero-collision entity placed on top of the advanced hatch.
 -- Script sets proxy_target_entity = hub so inserters/loaders read and write
