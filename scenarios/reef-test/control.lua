@@ -121,9 +121,11 @@ local function try_create_platform(player)
 
     -- Pre-place cargo hatch + inserter
     -- Hub occupies ±4 tiles from centre; hatch at x=6 clears it
+    -- raise_built = true so control.lua's build dispatcher fires and registers the hatch
+    -- (plain surface.create_entity does not raise any build event on its own).
     surface.create_entity{
         name = "cargo-hatch", position = { 6, 0 }, force = force,
-        create_build_effect_smoke = false,
+        create_build_effect_smoke = false, raise_built = true,
     }
     surface.create_entity{
         name = "fast-inserter", position = { 8, 0 },
@@ -132,9 +134,11 @@ local function try_create_platform(player)
     }
 
     -- Pre-place PMR west of hub for easy recipe testing (clear of hub, hatch, and power entities)
+    -- raise_built = true so control.lua's build dispatcher fires and spawns the PMR's belt loaders
+    -- (plain surface.create_entity does not raise any build event on its own).
     surface.create_entity{
         name = "basic-pmr", position = { -6, 0 }, force = force,
-        create_build_effect_smoke = false,
+        create_build_effect_smoke = false, raise_built = true,
     }
 
     player.teleport({ 0, 3 }, surface)
