@@ -296,6 +296,16 @@ when using relative GUIs.
 
 ---
 
+### `next_upgrade` bounding box mismatch after resizing a deepcopied assembling-machine
+
+**Error:** `next_upgrade target (assembling-machine-2) must have the same bounding box`
+**Wrong:** Leaving `next_upgrade` inherited from the deepcopy base after changing `collision_box`/`selection_box`
+**Correct:** Set `pmr.next_upgrade = nil` (or point it to a same-size custom entity) whenever the bounding box diverges from the base
+**Source:** The Reef Phase 5 load error — `basic-pmr` deepcopied from `assembling-machine-1` (3×3 default), then resized to 1×1
+**Note:** `assembling-machine-1` has `next_upgrade = "assembling-machine-2"`. Both vanilla machines are 3×3, so the constraint is invisible until you change the box. Factorio enforces identical bounding boxes between a machine and its `next_upgrade` target at data-stage setup — it is a hard error, not a silent mismatch.
+
+---
+
 ## Still Uncertain
 
 The following identifiers appear in the source material but their full signatures or constraints could not be confirmed from the provided excerpts alone. Verify against lua-api.factorio.com or the PlanetsLib source before use:
