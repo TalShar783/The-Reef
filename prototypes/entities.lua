@@ -27,7 +27,57 @@ pmr.crafting_categories = { "the-reef-pmr" }
 pmr.crafting_speed   = 1
 pmr.ingredient_count = 4  -- max 4 ingredient types (fuel cell needs 3)
 pmr.minable          = { mining_time = 0.5, result = "basic-pmr" }
-pmr.fixed_recipe     = nil  -- assembling-machine-1 has no fixed recipe but clear it anyway
+pmr.fixed_recipe     = nil
+
+-- 1x1 footprint (standard chest inset).
+pmr.collision_box = {{ -0.35, -0.35 }, { 0.35, 0.35 }}
+pmr.selection_box = {{ -0.5,  -0.5  }, { 0.5,  0.5  }}
+
+-- Disable module slots and circuit connector (positions mismatch on 1x1).
+pmr.module_slots              = 0
+pmr.circuit_connector         = nil
+pmr.circuit_wire_max_distance = 0
+
+-- Replace assembler graphics with requester-chest sprite + orange in/out arrows
+-- that appear in alt-mode (entity-info-icon-above render layer).
+pmr.graphics_set = {
+    animation = {
+        filename    = "__base__/graphics/entity/logistic-chest/requester-chest.png",
+        width       = 66,
+        height      = 74,
+        shift       = util.by_pixel(0, -2),
+        scale       = 0.5,
+        frame_count = 1,
+    },
+    working_visualisations = {
+        -- Input indicator: orange arrow pointing right, left of machine.
+        {
+            render_layer = "entity-info-icon-above",
+            always_draw  = true,
+            animation = {
+                filename    = "__core__/graphics/arrows/hint-orange-arrow-right.png",
+                width       = 38,
+                height      = 73,
+                scale       = 0.3,
+                shift       = util.by_pixel(-20, 0),
+                frame_count = 1,
+            },
+        },
+        -- Output indicator: orange arrow pointing right, right of machine.
+        {
+            render_layer = "entity-info-icon-above",
+            always_draw  = true,
+            animation = {
+                filename    = "__core__/graphics/arrows/hint-orange-arrow-left.png",
+                width       = 43,
+                height      = 73,
+                scale       = 0.3,
+                shift       = util.by_pixel(20, 0),
+                frame_count = 1,
+            },
+        },
+    },
+}
 
 data:extend({ pmr })
 
