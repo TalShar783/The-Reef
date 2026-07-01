@@ -2,12 +2,12 @@
 
 data:extend({
   -- PMR crafting category — used by all Basic PMR recipes.
-  {
-    type = "recipe-category",
-    name = "the-reef-pmr",
-  },
+  { type = "recipe-category", name = "the-reef-pmr" },
 
-
+  -- Fluid PMR crafting category — display recipes only; native crafting blocked.
+  -- All fluid boxes use production_type="none" so the crafter never sees ingredients.
+  -- Script drives all fluid routing and production via on_tick.
+  { type = "recipe-category", name = "the-reef-fluid-pmr" },
 })
 
 -- Basic PMR (Probabilistic Matter Recombinator)
@@ -54,6 +54,67 @@ pmr.graphics_set = {
 }
 
 data:extend({ pmr })
+
+-- Fluid PMR (Probabilistic Matter Recombinator — Fluid Variant)
+-- 3×3 machine (chemical-plant footprint). Accepts one fluid input on the left
+-- face. Internal tanks for molten-iron and molten-copper (production_type="none"
+-- so the native crafter never matches them as recipe ingredients). All fluid
+-- movement and production driven by scripts/fluid_pmr.lua.
+--
+-- Display recipes (fluid-pmr-iron-plate, fluid-pmr-copper-plate) are set by
+-- script via entity.set_recipe() to show the predicted output ghost and expose
+-- the predicted-output item signal on the circuit network.
+--
+-- Placeholder graphics: chemical-plant sprites. Replace with custom art before release.
+
+local fluid_pmr = table.deepcopy(data.raw["assembling-machine"]["chemical-plant"])
+fluid_pmr.name              = "fluid-pmr"
+fluid_pmr.icon              = "__space-age__/graphics/icons/shattered-planet.png"
+fluid_pmr.icon_size         = 64
+fluid_pmr.crafting_categories = { "the-reef-fluid-pmr" }
+fluid_pmr.crafting_speed    = 1
+fluid_pmr.ingredient_count  = 4
+fluid_pmr.minable           = { mining_time = 1, result = "fluid-pmr" }
+fluid_pmr.fixed_recipe      = nil
+fluid_pmr.next_upgrade      = nil
+fluid_pmr.module_slots      = 0
+fluid_pmr.allowed_effects   = nil
+
+-- One external input on the left (west) face only.
+-- production_type="none" on all boxes: native crafter sees no recipe ingredients
+-- and will never fire. Script handles all fluid routing and production.
+--
+-- Fluid box index map (used in fluid_pmr.lua):
+--   [1] staging / external input (has pipe connection, left face)
+--   [2] molten-iron internal tank  (no connections, filtered)
+--   [3] molten-copper internal tank (no connections, filtered)
+fluid_pmr.fluid_boxes = {
+    {
+        production_type  = "none",
+        pipe_covers      = pipecoverspictures(),
+        volume           = 200,
+        pipe_connections = {
+            {
+                flow_direction = "input",
+                direction      = defines.direction.west,
+                position       = { -1, 0 },
+            }
+        },
+    },
+    {
+        production_type = "none",
+        filter          = "molten-iron",
+        volume          = 500,
+    },
+    {
+        production_type = "none",
+        filter          = "molten-copper",
+        volume          = 500,
+    },
+}
+fluid_pmr.fluid_boxes_off_when_no_fluid_recipe = false
+
+data:extend({ fluid_pmr })
 
 -- Dilithium Reactor T1
 -- Burner-generator base: consumes Dilithium Fuel Cells from a built-in fuel slot

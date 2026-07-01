@@ -35,6 +35,47 @@ data:extend({
     },
   },
 
+  -- Fluid PMR display recipes ------------------------------------------------
+  -- These exist for the recipe book and ghost/circuit output; native crafting
+  -- never fires because all fluid boxes use production_type="none".
+  -- Script calls entity.set_recipe() to switch between these based on fluid ratios.
+  -- 10 molten iron  → 1 iron plate
+  -- 10 molten copper → 1 copper plate
+  {
+    type          = "recipe",
+    name          = "fluid-pmr-iron-plate",
+    icon          = "__base__/graphics/icons/iron-plate.png",
+    icon_size     = 64,
+    category      = "the-reef-fluid-pmr",
+    subgroup      = "the-reef-processing",
+    order         = "z[fluid-pmr]-a",
+    enabled       = false,
+    energy_required = 3,
+    ingredients   = {
+      { type = "fluid", name = "molten-iron", amount = 10 },
+    },
+    results       = {
+      { type = "item", name = "iron-plate", amount = 1 },
+    },
+  },
+  {
+    type          = "recipe",
+    name          = "fluid-pmr-copper-plate",
+    icon          = "__base__/graphics/icons/copper-plate.png",
+    icon_size     = 64,
+    category      = "the-reef-fluid-pmr",
+    subgroup      = "the-reef-processing",
+    order         = "z[fluid-pmr]-b",
+    enabled       = false,
+    energy_required = 3,
+    ingredients   = {
+      { type = "fluid", name = "molten-copper", amount = 10 },
+    },
+    results       = {
+      { type = "item", name = "copper-plate", amount = 1 },
+    },
+  },
+
   -- PMR recipes (test) -----------------------------------------------------
   -- Raw inputs are exact totals for each step in the vanilla crafting chain
   -- at 100% efficiency with no modules or speed bonuses.
@@ -226,6 +267,28 @@ data:extend({
     },
     results = {
       { type = "item", name = "basic-pmr", amount = 1 },
+    },
+  },
+
+  -- Fluid PMR (building recipe) — crafted in an assembling machine.
+  {
+    type     = "recipe",
+    name     = "fluid-pmr",
+    icon     = "__space-age__/graphics/icons/shattered-planet.png",
+    icon_size = 64,
+    category = "crafting",
+    subgroup = "the-reef-machines",
+    order    = "z[pmr]-b",
+    enabled  = false,
+    energy_required = 10,
+    ingredients = {
+      { type = "item", name = "iron-plate",        amount = 30 },
+      { type = "item", name = "steel-plate",       amount = 15 },
+      { type = "item", name = "electronic-circuit", amount = 10 },
+      { type = "item", name = "pipe",              amount = 20 },
+    },
+    results = {
+      { type = "item", name = "fluid-pmr", amount = 1 },
     },
   },
 
