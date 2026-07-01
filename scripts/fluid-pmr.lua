@@ -205,7 +205,32 @@ end
 -- window is rendered by the engine itself and isn't exposed as a child of
 -- player.gui.screen (that root only ever contains mod-created elements),
 -- so there's no on-screen position to read. Confirmed by testing, not just
--- unverified — a fixed position is the only option here.
+-- unverified — a fixed position is the only option here. Which corner is
+-- controlled by the "the-reef-fluid-pmr-gui-position" runtime-per-user
+-- setting (same idea as Bob's Adjustable Inserters' own dock-position
+-- setting), so players who don't like the default can move it.
+local SCREEN_MARGIN = 100
+local TOP_Y = 200
+
+local function panel_location(player, frame)
+    local usable_width  = player.display_resolution.width  / player.display_scale
+    local usable_height = player.display_resolution.height / player.display_scale
+    local frame_width  = frame.style.minimal_width  or 250
+    local frame_height = frame.style.minimal_height or 200
+
+    local position = settings.get_player_settings(player)["the-reef-fluid-pmr-gui-position"].value
+
+    if position == "top-left" then
+        return { x = SCREEN_MARGIN, y = TOP_Y }
+    elseif position == "bottom-right" then
+        return { x = usable_width - frame_width - SCREEN_MARGIN, y = usable_height - frame_height - SCREEN_MARGIN }
+    elseif position == "bottom-left" then
+        return { x = SCREEN_MARGIN, y = usable_height - frame_height - SCREEN_MARGIN }
+    else -- "top-right", the default
+        return { x = usable_width - frame_width - SCREEN_MARGIN, y = TOP_Y }
+    end
+end
+
 local function build_subtank_gui(player, data, gate_open)
     local frame = player.gui.screen.add({
         type      = "frame",
@@ -215,12 +240,7 @@ local function build_subtank_gui(player, data, gate_open)
     add_titlebar(frame, gate_open)
     add_fluid_bars(frame, data)
 
-    -- Right edge of the screen. display_resolution is raw screen pixels;
-    -- divide by display_scale to get the actual usable GUI coordinate
-    -- space, or this ends up placed off-screen for anyone running UI
-    -- scale != 100%.
-    local usable_width = player.display_resolution.width / player.display_scale
-    frame.location = { x = usable_width - (frame.style.minimal_width or 250) - 100, y = 200 }
+    frame.location = panel_location(player, frame)
 
     return frame
 end

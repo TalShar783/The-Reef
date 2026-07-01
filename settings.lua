@@ -12,3 +12,16 @@
 --     order = "a",
 --   },
 -- })
+
+-- Fluid PMR's sub-tank breakdown panel floats at a fixed screen position
+-- since it can't be docked to the native storage-tank GUI (no
+-- relative_gui_type exists for storage-tank). Let players move it instead.
+data:extend({
+  {
+    type = "string-setting",
+    name = "the-reef-fluid-pmr-gui-position",
+    setting_type = "runtime-per-user",
+    default_value = "top-right",
+    allowed_values = { "top-right", "top-left", "bottom-right", "bottom-left" },
+  },
+})
