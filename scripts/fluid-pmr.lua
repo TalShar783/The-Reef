@@ -183,18 +183,20 @@ local function add_fluid_bars(frame, data)
         local amount = fluid and fluid.amount or 0
         local capacity = (subtank and subtank.valid) and subtank.get_fluid_capacity(1) or 1
 
+        local fluid_proto = prototypes.fluid[fluid_name]
+        local display_name = fluid_proto and fluid_proto.localised_name or fluid_name
+
         local row = content.add({ type = "flow" })
         row.style.vertical_align = "center"
-        row.add({ type = "sprite", sprite = "fluid/" .. fluid_name })
+        row.add({ type = "sprite", sprite = "fluid/" .. fluid_name, tooltip = display_name })
 
         local bar = row.add({ type = "progressbar", value = amount / capacity })
         bar.style.width = 150
-        local fluid_proto = prototypes.fluid[fluid_name]
         if fluid_proto and fluid_proto.base_color then
             bar.style.color = fluid_proto.base_color
         end
 
-        row.add({ type = "label", caption = string.format("%s: %d / %d", fluid_name, amount, capacity) })
+        row.add({ type = "label", caption = { "", display_name, string.format(": %d / %d", amount, capacity) } })
     end
     return content
 end
