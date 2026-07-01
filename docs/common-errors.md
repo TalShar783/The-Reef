@@ -293,6 +293,15 @@ when using relative GUIs.
 
 ---
 
+### `production_type = "none"` rejected on crafting machine fluid boxes (2.x)
+
+**Wrong:** `{ production_type = "none", pipe_connections = {}, ... }` on any fluid box of an `assembling-machine` entity
+**Correct:** All fluid boxes on crafting machines must use `production_type = "input"` or `"output"` — there is no `"none"` option
+**Source:** Factorio loader error during The Reef Fluid PMR development: "Crafting machine fluidboxes must be input or output types."
+**Note:** `production_type = "none"` was intended to create internal "tank" boxes that the native crafter ignores, but it is a hard error in 2.x. The workaround is a permanently-unobtainable blocker fluid as an ingredient in all display recipes (see `pmr-void-fluid` pattern in `prototype-cheatsheet.md`). With this pattern all fluid boxes use `production_type = "input"`, and native crafting never fires because it can never satisfy the blocker ingredient.
+
+---
+
 ### Omitting `pipe_connections` on internal fluid boxes (2.x required field)
 
 **Wrong:** Fluid box with no `pipe_connections` key at all

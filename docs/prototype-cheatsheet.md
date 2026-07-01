@@ -247,6 +247,57 @@ If you must specify one, use only confirmed vanilla subgroups:
 
 ---
 
+## assembling-machine (crafting machine with fluid boxes)
+
+**Type string:** `"assembling-machine"` — this is also the type for chemical plants. Chemical plant is NOT a separate prototype type; it is an `assembling-machine` with `fluid_boxes_off_when_no_fluid_recipe = false`.
+
+### 2.x fluid box rules (all apply to every `assembling-machine` entity)
+
+| Constraint | Detail |
+|---|---|
+| `pipe_connections` required | Must be present on **every** fluid box, including internal-only tanks. Use `pipe_connections = {}` for boxes with no external pipe access. Omitting the key entirely is a hard loader error. |
+| `production_type` must be `"input"` or `"output"` | `"none"` does not exist in 2.x and is a hard loader error. |
+| `fluid_boxes_off_when_no_fluid_recipe` | Default `true` — hides fluid boxes when no fluid recipe is active. Set to `false` to keep boxes always visible/active (like chemical plant behavior). |
+| `filter` | Optional per-box fluid restriction. `filter = "molten-iron"` prevents other fluids from entering that box. |
+
+### Internal tank pattern (sealed from pipes, script-only access)
+
+```lua
+{
+  production_type  = "input",
+  filter           = "molten-iron",  -- restrict to one fluid
+  volume           = 500,
+  pipe_connections = {},             -- required; empty = no external pipe access
+}
+```
+
+### Void-fluid blocker pattern (prevent native crafting, keep scripted production)
+
+When using `production_type = "input"` but needing native crafting to never fire, add a permanently-unobtainable hidden fluid as an ingredient in every display recipe:
+
+```lua
+-- 1. Define an unobtainable hidden fluid (data stage):
+{ type = "fluid", name = "pmr-void-fluid", hidden = true, auto_barrel = false,
+  default_temperature = 15, base_color = {0,0,0}, flow_color = {0,0,0},
+  icon = "__base__/graphics/icons/fluid/crude-oil.png", icon_size = 64 }
+
+-- 2. Include it as an ingredient in every display recipe:
+ingredients = {
+  { type = "fluid", name = "molten-iron",    amount = 10 },
+  { type = "fluid", name = "pmr-void-fluid", amount = 1  }, -- never satisfiable
+}
+```
+
+Since `pmr-void-fluid` has no production recipe, the crafter can never satisfy all ingredients — native crafting never fires. Script calls `entity.set_recipe()` to swap between display recipes; the active recipe sets the ghost icon and outputs a circuit signal for free (use "output current recipe as circuit signal" mode).
+
+### Space Age built-in molten fluids
+
+Defined in `space-age/prototypes/fluid.lua` — do not redefine:
+- `molten-iron` — `default_temperature = 1500`
+- `molten-copper` — `default_temperature = 1100`
+
+---
+
 ## technology
 
 **Type string:** `"technology"` — referenced by file structure only (`require("prototypes.technology")` in Cerys; multiple technology files in Maraxsis).
