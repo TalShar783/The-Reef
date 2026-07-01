@@ -23,8 +23,10 @@ local FLUID_PMR_FLUIDS = require("constants.fluid-pmr")
 
 -- ─── 1. Shell ────────────────────────────────────────────────────────────────
 -- Purely cosmetic/structural placeholder. No fluid_box, so zero ambiguity
--- about it interacting with the fluid system. Invisible and unselectable —
--- the intake tank (below) is the entity the player actually sees and clicks.
+-- about it interacting with the fluid system. Visible and selectable — the
+-- entity the player actually sees, clicks, and mines. Uses the storage-tank
+-- sprite (borrowed straight off the storage-tank prototype) so it looks like
+-- a tank even though it isn't one.
 
 local shell = table.deepcopy(data.raw["simple-entity-with-owner"]["simple-entity-with-owner"])
 shell.name          = "fluid-pmr"
@@ -36,8 +38,7 @@ shell.order         = "a[pmr]-c"
 shell.minable       = { mining_time = 1, result = "fluid-pmr" }
 shell.collision_box = {{ -1.4, -1.4 }, { 1.4, 1.4 }}
 shell.selection_box = {{ -1.5, -1.5 }, { 1.5, 1.5 }}
-shell.picture             = nil
-shell.selectable_in_game  = false
+shell.picture = data.raw["storage-tank"]["storage-tank"].pictures.picture
 
 data:extend({ shell })
 
@@ -47,6 +48,7 @@ data:extend({ shell })
 -- (entity.get_fluid/add_fluid), not through a real engine pipe connection.
 -- Its only jobs are (a) staging buffer and (b) circuit_connector content
 -- signal for gating the pump — no real fluid network link needed for either.
+-- Invisible and unselectable — the shell (above) is the visible/clickable one.
 
 local intake_tank = table.deepcopy(data.raw["storage-tank"]["storage-tank"])
 intake_tank.name           = "fluid-pmr-intake-tank"
@@ -55,6 +57,8 @@ intake_tank.collision_mask = { layers = {} }
 intake_tank.hidden         = true
 intake_tank.flags          = { "not-on-map", "placeable-off-grid", "not-blueprintable", "not-deconstructable" }
 intake_tank.fluid_box.pipe_connections = {}
+intake_tank.pictures            = nil
+intake_tank.selectable_in_game  = false
 
 data:extend({ intake_tank })
 
