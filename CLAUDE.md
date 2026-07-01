@@ -151,6 +151,12 @@ Space platforms are a fundamentally different environment from planet surfaces. 
 - Reference mods (Cerys, Maraxsis, Metal & Stars) are for local development inspiration only — their source code is not committed to this repo and must not be reproduced verbatim
 - Check `docs/common-errors.md` before using any API method or prototype field that looks familiar from 1.x or training data
 
+## Scope Discipline
+
+Research and investigation (grepping, reading docs, exploring the codebase, checking the API JSON) can and should be broad. **Implementation is the opposite** — when told to do something, do it in the most straightforward, narrow way that satisfies the literal request. Don't add extra verification, defensive scaffolding, workarounds, or "helpful" scope expansion beyond what was asked.
+
+If an instruction looks like it will fail or won't work as anticipated, do it anyway. Flag the concern once, briefly, then proceed as instructed — don't silently substitute your own approach or work around a problem that wasn't specified. This includes not taking unrequested side-effect actions (launching the game, running processes, starting background monitors) unless explicitly asked.
+
 ## Git
 
 - Branch: `BUILD-1` (all commits go here, not main)
