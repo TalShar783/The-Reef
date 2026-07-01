@@ -278,6 +278,15 @@ when using relative GUIs.
 
 ---
 
+### Omitting `pipe_connections` on internal fluid boxes (2.x required field)
+
+**Wrong:** Fluid box with no `pipe_connections` key at all
+**Correct:** `pipe_connections = {}` (empty array) for boxes with no external connections
+**Source:** Factorio loader error during The Reef Fluid PMR development: "Key 'pipe_connections' not found in property tree at ROOT.assembling-machine.fluid-pmr.fluid_boxes[1]" (0-indexed)
+**Note:** In Factorio 2.x, `pipe_connections` is required on every fluid box definition, even internal-only tanks that should have no external pipe access. Provide an empty array. The error index is 0-based, so `fluid_boxes[1]` refers to the second box in the Lua array.
+
+---
+
 ### Using planet-format spawn definitions on a space-connection
 
 **Wrong:** `asteroid_util.spawn_definitions(route, 0.4)` (with position arg) in a `space-connection` prototype
