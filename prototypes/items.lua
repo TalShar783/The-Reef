@@ -3,21 +3,20 @@
 data:extend({
   { type = "fuel-category", name = "dilithium" },
 
-  -- Internal void fluid used as a blocking ingredient in Fluid PMR display recipes.
-  -- Never producible, never obtainable. Prevents native crafting from firing while
-  -- still allowing the display recipe to set a ghost and output a circuit signal.
+  -- Hidden item ingredient in the Fluid PMR display recipe. Never producible,
+  -- never obtainable. Prevents native crafting from firing. Using an item (not
+  -- a fluid) lets the recipe have zero fluid ingredients, which is required
+  -- when the entity has only one fluid box — Factorio rejects any recipe whose
+  -- fluid-ingredient count exceeds the machine's physical fluid box count.
   {
-    type         = "fluid",
-    name         = "pmr-void-fluid",
-    icon         = "__base__/graphics/icons/fluid/crude-oil.png",
-    icon_size    = 64,
-    subgroup     = "fluid",
-    order        = "z[pmr-void]",
-    default_temperature = 15,
-    base_color   = { 0, 0, 0 },
-    flow_color   = { 0, 0, 0 },
-    hidden       = true,
-    auto_barrel  = false,
+    type       = "item",
+    name       = "pmr-void-item",
+    icon       = "__base__/graphics/icons/iron-plate.png",
+    icon_size  = 64,
+    subgroup   = "other",
+    order      = "z[pmr-void]",
+    stack_size = 1,
+    hidden     = true,
   },
 
   -- ── Materials (the-reef-materials row) ──────────────────────────────────

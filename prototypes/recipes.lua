@@ -41,12 +41,12 @@ data:extend({
   -- Script calls entity.set_recipe() to switch between these based on fluid ratios.
   -- 10 molten iron  → 1 iron plate
   -- 10 molten copper → 1 copper plate
-  -- Universal display recipe. All 3 fluid ingredients must be listed so the
-  -- game creates all 3 fluid boxes at runtime (2.x caps accessible box count
-  -- to the active recipe's fluid ingredient count).
-  -- pmr-void-fluid is an unobtainable hidden fluid — native crafting can never
-  -- start because this ingredient can never be satisfied. Script owns all
-  -- production via on_tick.
+  -- Universal display recipe. Zero fluid ingredients so the recipe is compatible
+  -- with the entity's single staging fluid box (Factorio rejects recipes whose
+  -- fluid-ingredient count exceeds the machine's physical fluid box count).
+  -- pmr-void-item is an unobtainable hidden item — native crafting can never
+  -- start because this ingredient can never be in the input inventory.
+  -- Script owns all production and fluid routing via on_tick.
   {
     type          = "recipe",
     name          = "fluid-pmr-process",
@@ -58,9 +58,7 @@ data:extend({
     enabled       = false,
     energy_required = 3,
     ingredients   = {
-      { type = "fluid", name = "molten-iron",    amount = 10 },
-      { type = "fluid", name = "molten-copper",  amount = 10 },
-      { type = "fluid", name = "pmr-void-fluid", amount = 1  },
+      { type = "item", name = "pmr-void-item", amount = 1 },
     },
     results       = {
       { type = "item", name = "iron-plate",   amount = 1, independent_probability = 0.5 },
