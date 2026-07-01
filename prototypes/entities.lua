@@ -90,7 +90,7 @@ fluid_pmr.allowed_effects   = nil
 --   [3] molten-copper internal tank (no connections, filtered)
 fluid_pmr.fluid_boxes = {
     {
-        production_type  = "none",
+        production_type  = "input",
         pipe_covers      = pipecoverspictures(),
         volume           = 200,
         pipe_connections = {
@@ -102,13 +102,13 @@ fluid_pmr.fluid_boxes = {
         },
     },
     {
-        production_type  = "none",
+        production_type  = "input",
         filter           = "molten-iron",
         volume           = 500,
         pipe_connections = {},
     },
     {
-        production_type  = "none",
+        production_type  = "input",
         filter           = "molten-copper",
         volume           = 500,
         pipe_connections = {},

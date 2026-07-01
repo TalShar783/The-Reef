@@ -3,6 +3,23 @@
 data:extend({
   { type = "fuel-category", name = "dilithium" },
 
+  -- Internal void fluid used as a blocking ingredient in Fluid PMR display recipes.
+  -- Never producible, never obtainable. Prevents native crafting from firing while
+  -- still allowing the display recipe to set a ghost and output a circuit signal.
+  {
+    type         = "fluid",
+    name         = "pmr-void-fluid",
+    icon         = "__base__/graphics/icons/fluid/empty.png",
+    icon_size    = 64,
+    subgroup     = "fluid",
+    order        = "z[pmr-void]",
+    default_temperature = 15,
+    base_color   = { 0, 0, 0 },
+    flow_color   = { 0, 0, 0 },
+    hidden       = true,
+    auto_barrel  = false,
+  },
+
   -- ── Materials (the-reef-materials row) ──────────────────────────────────
 
   {

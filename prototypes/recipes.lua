@@ -52,7 +52,8 @@ data:extend({
     enabled       = false,
     energy_required = 3,
     ingredients   = {
-      { type = "fluid", name = "molten-iron", amount = 10 },
+      { type = "fluid", name = "molten-iron",    amount = 10 },
+      { type = "fluid", name = "pmr-void-fluid", amount = 1  },
     },
     results       = {
       { type = "item", name = "iron-plate", amount = 1 },
@@ -69,7 +70,8 @@ data:extend({
     enabled       = false,
     energy_required = 3,
     ingredients   = {
-      { type = "fluid", name = "molten-copper", amount = 10 },
+      { type = "fluid", name = "molten-copper",  amount = 10 },
+      { type = "fluid", name = "pmr-void-fluid", amount = 1  },
     },
     results       = {
       { type = "item", name = "copper-plate", amount = 1 },
