@@ -129,9 +129,12 @@ function M.on_removed(event)
 end
 
 -- ─── GUI ─────────────────────────────────────────────────────────────────────
--- The shell's own fluidbox is just a near-empty staging buffer — showing it
--- in the default storage-tank GUI would be misleading. Replace that default
--- GUI with a custom frame listing each sub-tank's actual contents instead.
+-- 2.1's native storage-tank GUI (circuit connection subwindow, flush
+-- buttons, status light, entity preview) is left alone — player.opened is
+-- never overridden, so it opens exactly as it would for any other storage
+-- tank. There's no supported way to dock our own content inside it (no
+-- relative_gui_type exists for storage-tank), so the sub-tank breakdown is
+-- shown as a separate, unanchored floating panel alongside it instead.
 
 local CLOSE_BUTTON_NAME = "fluid_pmr_close_button"
 
@@ -202,9 +205,15 @@ local function build_subtank_gui(player, data, gate_open)
         name      = "fluid_pmr_readout",
         direction = "vertical",
     })
-    frame.auto_center = true
     add_titlebar(frame, gate_open)
     add_fluid_bars(frame, data)
+
+    -- Positioned along the right edge so it doesn't sit on top of the
+    -- native (centered) storage-tank GUI. Draggable via the titlebar if
+    -- that's still not out of the way for a given resolution/UI scale.
+    local res = player.display_resolution
+    frame.location = { x = res.width - (frame.style.minimal_width or 250) - 100, y = 200 }
+
     return frame
 end
 
@@ -226,8 +235,10 @@ function M.on_gui_opened(event)
     local staged = entity.valid and entity.get_fluid(1)
     local gate_open = not (staged and staged.amount > 0)
 
+    -- Deliberately not setting player.opened here — leaving it as the
+    -- entity itself (the default) is what gives us the native GUI. Our
+    -- frame is purely a supplementary window.
     local frame = build_subtank_gui(player, data, gate_open)
-    player.opened = frame
     storage.fluid_pmr_guis[event.player_index] = frame
 end
 
