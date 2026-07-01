@@ -288,7 +288,7 @@ when using relative GUIs.
 - `entity.get_fluid_capacity(index)` → max capacity of box N
 - `entity.add_fluid(index, fluid)` → **index first**, fluid table second
 - `entity.remove_fluid(index, amount)` → **index first**, amount second
-**Source:** Runtime error during The Reef Fluid PMR development: "LuaEntity doesn't contain key fluidbox." Confirmed via runtime-api.json: LuaEntity has no `fluidbox` attribute in 2.x, only `fluidbox_neighbours` and `fluids_count`. Parameter order confirmed by runtime-api.json parameter `order` field (0 = first positional arg).
+**Source:** Runtime error during The Reef Fluid PMR development (feature since deprecated, see `deprecated/fluid-pmr/`): "LuaEntity doesn't contain key fluidbox." Confirmed via runtime-api.json: LuaEntity has no `fluidbox` attribute in 2.x, only `fluidbox_neighbours` and `fluids_count`. Parameter order confirmed by runtime-api.json parameter `order` field (0 = first positional arg).
 **Note:** `entity.fluidbox` still exists on pipe/pump/fluid-tank entities as `LuaFluidBox` (those are a different class). On crafting machines (assembling-machine, chemical-plant type), all fluid access is now through the explicit method API above. **Index is ALWAYS the first argument** — `add_fluid(index, fluid)`, `remove_fluid(index, amount)`, `set_fluid(index, fluid)`. Passing fluid first causes "'index': real number expected got table" at runtime.
 
 ---
@@ -297,7 +297,7 @@ when using relative GUIs.
 
 **Wrong:** `{ production_type = "none", pipe_connections = {}, ... }` on any fluid box of an `assembling-machine` entity
 **Correct:** All fluid boxes on crafting machines must use `production_type = "input"` or `"output"` — there is no `"none"` option
-**Source:** Factorio loader error during The Reef Fluid PMR development: "Crafting machine fluidboxes must be input or output types."
+**Source:** Factorio loader error during The Reef Fluid PMR development (feature since deprecated, see `deprecated/fluid-pmr/`): "Crafting machine fluidboxes must be input or output types."
 **Note:** `production_type = "none"` was intended to create internal "tank" boxes that the native crafter ignores, but it is a hard error in 2.x. The workaround is a permanently-unobtainable blocker fluid as an ingredient in all display recipes (see `pmr-void-fluid` pattern in `prototype-cheatsheet.md`). With this pattern all fluid boxes use `production_type = "input"`, and native crafting never fires because it can never satisfy the blocker ingredient.
 
 ---
@@ -306,7 +306,7 @@ when using relative GUIs.
 
 **Wrong:** Fluid box with no `pipe_connections` key at all
 **Correct:** `pipe_connections = {}` (empty array) for boxes with no external connections
-**Source:** Factorio loader error during The Reef Fluid PMR development: "Key 'pipe_connections' not found in property tree at ROOT.assembling-machine.fluid-pmr.fluid_boxes[1]" (0-indexed)
+**Source:** Factorio loader error during The Reef Fluid PMR development (feature since deprecated, see `deprecated/fluid-pmr/`): "Key 'pipe_connections' not found in property tree at ROOT.assembling-machine.fluid-pmr.fluid_boxes[1]" (0-indexed)
 **Note:** In Factorio 2.x, `pipe_connections` is required on every fluid box definition, even internal-only tanks that should have no external pipe access. Provide an empty array. The error index is 0-based, so `fluid_boxes[1]` refers to the second box in the Lua array.
 
 ---
@@ -315,7 +315,7 @@ when using relative GUIs.
 
 **Wrong:** Using `entity.add_fluid(index, fluid)` to accumulate fluid in a box defined with `pipe_connections = {}`
 **Correct:** Track accumulated fluid amounts in script storage (`data.fluids = { iron=0, copper=0 }`); only use `remove_fluid`/`get_fluid` on boxes with real pipe connections
-**Source:** Confirmed during The Reef Fluid PMR testing — staging fluid was successfully removed via `remove_fluid` but fluid added to the sealed internal boxes via `add_fluid` produced no effect; `get_fluid` on those boxes always returned 0
+**Source:** Confirmed during The Reef Fluid PMR testing (feature since deprecated, see `deprecated/fluid-pmr/`) — staging fluid was successfully removed via `remove_fluid` but fluid added to the sealed internal boxes via `add_fluid` produced no effect; `get_fluid` on those boxes always returned 0
 **Note:** Sealed fluid boxes (pipe_connections = {}) appear to reject or discard script-inserted fluid. The "internal tank" pattern — sealed box accumulates fluid added via script — does not work. If you need script-side fluid accumulation, store amounts as numbers in the storage table. The sealed boxes are still valid for the prototype (no loader error) but are non-functional as storage.
 
 ---
@@ -351,7 +351,7 @@ when using relative GUIs.
 
 **Wrong:** Using an `assembling-machine`-based entity (including `chemical-plant` deepcopies) to accept multiple different fluid types through one pipe connection
 **Correct:** Use a `storage-tank`-based entity when you need one pipe input to accept whatever fluid arrives
-**Source:** Confirmed during The Reef Fluid PMR development — even with `production_type = "input"` and a valid pipe connection, the runtime fluid box only accepts the fluid named in the active recipe's ingredient. Any other fluid arriving at the pipe is rejected at the pipe-segment level; no script call can override this.
+**Source:** Confirmed during The Reef Fluid PMR development (feature since deprecated, see `deprecated/fluid-pmr/`) — even with `production_type = "input"` and a valid pipe connection, the runtime fluid box only accepts the fluid named in the active recipe's ingredient. Any other fluid arriving at the pipe is rejected at the pipe-segment level; no script call can override this.
 **Note:** This is a fundamental architectural constraint, not a configuration option. "One staging box that accepts molten-iron OR molten-copper OR any other fluid" is not achievable on any assembling-machine or chemical-plant base entity. `storage-tank` entities have no recipe system and accept any single fluid type that connects to them (standard Factorio one-fluid-per-network rule applies, but the tank itself does not filter by recipe).
 
 ---

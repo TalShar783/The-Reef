@@ -70,16 +70,6 @@ data:extend({
   },
   {
     type         = "item",
-    name         = "fluid-pmr",
-    icon         = "__space-age__/graphics/icons/shattered-planet.png",
-    icon_size    = 64,
-    subgroup     = "the-reef-machines",
-    order        = "a[pmr]-b",
-    stack_size   = 10,
-    place_result = "fluid-pmr",
-  },
-  {
-    type         = "item",
     name         = "dilithium-reactor-1",
     icon         = "__base__/graphics/icons/nuclear-reactor.png",
     icon_size    = 64,

@@ -21,7 +21,6 @@ require("prototypes.recipes")
 require("prototypes.entities")
 require("prototypes.ithaca")
 require("prototypes.technologies.the-reef-basic-pmr")
-require("prototypes.technologies.the-reef-fluid-pmr")
 
 -- Phase 4: Dilithium Science Pack + Reactor T1 + Cargo Hatch
 require("prototypes.technologies.the-reef-dilithium-science")
