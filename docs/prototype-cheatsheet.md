@@ -290,6 +290,14 @@ ingredients = {
 
 Since `pmr-void-fluid` has no production recipe, the crafter can never satisfy all ingredients — native crafting never fires. Script calls `entity.set_recipe()` to swap between display recipes; the active recipe sets the ghost icon and outputs a circuit signal for free (use "output current recipe as circuit signal" mode).
 
+### Fluid box count is limited to the active recipe's fluid ingredient count (2.x runtime constraint)
+
+**Problem:** Even if the prototype defines N fluid boxes, only the first M are accessible at runtime, where M = the number of fluid-type ingredients in the currently active recipe. Accessing index M+1 throws "Fluid index N is out of bounds. Valid indexes are from 1 up to M."
+
+**Implication for multi-tank scripted machines:** Every display recipe must list ALL internal tank fluids as ingredients, even fluids that recipe doesn't "use," to keep all boxes accessible. For a 3-box machine (staging + 2 tanks), every display recipe needs 3 fluid ingredients. Swapping between two recipes with the same fluid ingredient list does not destroy box contents.
+
+**Scaling cost:** Adding a 4th fluid tank requires adding a 4th fluid ingredient to every display recipe. This works mechanically but adds recipe-book clutter. If recipe-book noise becomes a problem at scale, collapse to a single universal recipe with all possible fluids listed.
+
 ### Space Age built-in molten fluids
 
 Defined in `space-age/prototypes/fluid.lua` — do not redefine:

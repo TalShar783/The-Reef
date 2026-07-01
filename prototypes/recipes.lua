@@ -41,6 +41,14 @@ data:extend({
   -- Script calls entity.set_recipe() to switch between these based on fluid ratios.
   -- 10 molten iron  → 1 iron plate
   -- 10 molten copper → 1 copper plate
+  -- Both recipes list ALL fluid inputs so that all 3 prototype fluid boxes remain
+  -- accessible at runtime regardless of which recipe is active. In 2.x, the game
+  -- limits accessible fluid box indices to the count of fluid ingredients in the
+  -- current recipe — boxes beyond that count are "out of bounds." Listing every
+  -- fluid in every recipe keeps the count at 3 for any active recipe.
+  -- Order: molten-iron (→ box 1, staging), molten-copper (→ box 2, iron tank),
+  -- pmr-void-fluid (→ box 3, copper tank) — script ignores this mapping and
+  -- uses named indices (BOX_STAGING=1, BOX_IRON=2, BOX_COPPER=3) directly.
   {
     type          = "recipe",
     name          = "fluid-pmr-iron-plate",
@@ -53,6 +61,7 @@ data:extend({
     energy_required = 3,
     ingredients   = {
       { type = "fluid", name = "molten-iron",    amount = 10 },
+      { type = "fluid", name = "molten-copper",  amount = 10 },
       { type = "fluid", name = "pmr-void-fluid", amount = 1  },
     },
     results       = {
@@ -70,6 +79,7 @@ data:extend({
     enabled       = false,
     energy_required = 3,
     ingredients   = {
+      { type = "fluid", name = "molten-iron",    amount = 10 },
       { type = "fluid", name = "molten-copper",  amount = 10 },
       { type = "fluid", name = "pmr-void-fluid", amount = 1  },
     },
