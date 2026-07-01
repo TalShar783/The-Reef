@@ -3,22 +3,6 @@
 data:extend({
   { type = "fuel-category", name = "dilithium" },
 
-  -- Hidden item ingredient in the Fluid PMR display recipe. Never producible,
-  -- never obtainable. Prevents native crafting from firing. Using an item (not
-  -- a fluid) lets the recipe have zero fluid ingredients, which is required
-  -- when the entity has only one fluid box — Factorio rejects any recipe whose
-  -- fluid-ingredient count exceeds the machine's physical fluid box count.
-  {
-    type       = "item",
-    name       = "pmr-void-item",
-    icon       = "__base__/graphics/icons/iron-plate.png",
-    icon_size  = 64,
-    subgroup   = "other",
-    order      = "z[pmr-void]",
-    stack_size = 1,
-    hidden     = true,
-  },
-
   -- ── Materials (the-reef-materials row) ──────────────────────────────────
 
   {

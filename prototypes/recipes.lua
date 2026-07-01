@@ -35,37 +35,6 @@ data:extend({
     },
   },
 
-  -- Fluid PMR display recipes ------------------------------------------------
-  -- These exist for the recipe book and ghost/circuit output; native crafting
-  -- never fires because all fluid boxes use production_type="none".
-  -- Script calls entity.set_recipe() to switch between these based on fluid ratios.
-  -- 10 molten iron  → 1 iron plate
-  -- 10 molten copper → 1 copper plate
-  -- Universal display recipe. Zero fluid ingredients so the recipe is compatible
-  -- with the entity's single staging fluid box (Factorio rejects recipes whose
-  -- fluid-ingredient count exceeds the machine's physical fluid box count).
-  -- pmr-void-item is an unobtainable hidden item — native crafting can never
-  -- start because this ingredient can never be in the input inventory.
-  -- Script owns all production and fluid routing via on_tick.
-  {
-    type          = "recipe",
-    name          = "fluid-pmr-process",
-    icon          = "__space-age__/graphics/icons/shattered-planet.png",
-    icon_size     = 64,
-    categories    = { "the-reef-fluid-pmr" },
-    subgroup      = "the-reef-processing",
-    order         = "z[fluid-pmr]-a",
-    enabled       = false,
-    energy_required = 3,
-    ingredients   = {
-      { type = "item", name = "pmr-void-item", amount = 1 },
-    },
-    results       = {
-      { type = "item", name = "iron-plate",   amount = 1, independent_probability = 0.5 },
-      { type = "item", name = "copper-plate", amount = 1, independent_probability = 0.5 },
-    },
-  },
-
   -- PMR recipes (test) -----------------------------------------------------
   -- Raw inputs are exact totals for each step in the vanilla crafting chain
   -- at 100% efficiency with no modules or speed bonuses.

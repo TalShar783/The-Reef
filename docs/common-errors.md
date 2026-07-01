@@ -347,6 +347,24 @@ when using relative GUIs.
 
 ---
 
+### Assembling-machine fluid boxes filter to the recipe ingredient's fluid type
+
+**Wrong:** Using an `assembling-machine`-based entity (including `chemical-plant` deepcopies) to accept multiple different fluid types through one pipe connection
+**Correct:** Use a `storage-tank`-based entity when you need one pipe input to accept whatever fluid arrives
+**Source:** Confirmed during The Reef Fluid PMR development — even with `production_type = "input"` and a valid pipe connection, the runtime fluid box only accepts the fluid named in the active recipe's ingredient. Any other fluid arriving at the pipe is rejected at the pipe-segment level; no script call can override this.
+**Note:** This is a fundamental architectural constraint, not a configuration option. "One staging box that accepts molten-iron OR molten-copper OR any other fluid" is not achievable on any assembling-machine or chemical-plant base entity. `storage-tank` entities have no recipe system and accept any single fluid type that connects to them (standard Factorio one-fluid-per-network rule applies, but the tank itself does not filter by recipe).
+
+---
+
+### `entity.active` does not exist on `storage-tank` entities
+
+**Wrong:** Checking `entity.active` on a storage-tank-based entity to gate script logic
+**Correct:** Omit the check entirely — storage tanks have no power consumption and cannot be circuit-disabled; `active` is a crafting-machine property
+**Source:** Factorio API — `active` is defined on `LuaEntity` for types `assembling-machine`, `furnace`, `rocket-silo`, etc. Storage tanks have no enabled/disabled state exposed through the API.
+**Note:** If you need to allow circuit control of a storage-tank-based machine in the future, add a separate `LuaEntity` flag read or a custom circuit signal check.
+
+---
+
 ### `get_contents()` now returns an array, not a dictionary, in 2.x
 
 **Wrong:** `for name, count in pairs(inv.get_contents()) do` — `name` is a numeric index, `count` is an `ItemWithQualityCount` table, not a string/number pair. Passing the numeric key as an item name crashes with "Invalid ItemID".

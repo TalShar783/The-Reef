@@ -22,7 +22,6 @@ data:extend({
     },
     effects = {
       { type = "unlock-recipe", recipe = "fluid-pmr" },
-      { type = "unlock-recipe", recipe = "fluid-pmr-process" },
     },
   },
 })
