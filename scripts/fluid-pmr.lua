@@ -15,13 +15,18 @@
 -- remaining capacity. The pump's circuit condition (signal-everything == 0
 -- on the shell) keeps the external network from pushing anything new in
 -- until the drain empties the shell, so no explicit "rejection" logic is
--- needed here.
+-- needed here. Separately, any sub-tank with a rule in
+-- constants/fluid-pmr-conversions.lua converts its fluid into an item onto
+-- the shell's east-adjacent tile (belt, then container, then ground) once
+-- it has enough staged.
 
 local FLUID_PMR_FLUIDS = require("constants.fluid-pmr")
+local FLUID_PMR_CONVERSIONS = require("constants.fluid-pmr-conversions")
 
 local M = {}
 
-local DRAIN_INTERVAL = 30  -- ticks between drain attempts; tune once profiled
+local DRAIN_INTERVAL   = 30  -- ticks between drain attempts; tune once profiled
+local PRODUCE_INTERVAL = 30  -- ticks between item-output attempts
 
 -- ─── Storage ─────────────────────────────────────────────────────────────────
 
@@ -297,13 +302,106 @@ local function drain(data)
     return true
 end
 
-function M.on_tick(event)
-    if event.tick % DRAIN_INTERVAL ~= 0 then return end
-    storage.fluid_pmrs = storage.fluid_pmrs or {}
-    for uid, data in pairs(storage.fluid_pmrs) do
-        if not pump_to_shell(data) or not drain(data) then
-            storage.fluid_pmrs[uid] = nil
+-- ─── Item output ─────────────────────────────────────────────────────────────
+-- No loader entity — the sub-tanks are fluidboxes, not item inventories, so
+-- there is no item stack for a loader to pull from. This mirrors the
+-- deprecated Fluid PMR's own output approach (deprecated/fluid-pmr/fluid_pmr.lua):
+-- check the east-adjacent tile for a belt, then a container, then bare
+-- ground, and place the item directly via script.
+
+local function output_pos(entity)
+    local p = entity.position
+    return { x = p.x + 2, y = p.y }
+end
+
+local function can_output(surface, pos, item_name)
+    local belt = surface.find_entity("transport-belt", pos)
+    if belt then
+        local left  = belt.get_transport_line(defines.transport_line.left_line)
+        local right = belt.get_transport_line(defines.transport_line.right_line)
+        return left.can_insert_at_back() or right.can_insert_at_back()
+    end
+
+    local area = { { pos.x - 0.5, pos.y - 0.5 }, { pos.x + 0.5, pos.y + 0.5 } }
+    local containers = surface.find_entities_filtered({ area = area, type = { "container", "logistic-container" } })
+    if #containers > 0 then
+        for _, cont in ipairs(containers) do
+            local inv = cont.get_inventory(defines.inventory.chest)
+            if inv and inv.can_insert({ name = item_name, count = 1 }) then return true end
         end
+        return false
+    end
+
+    local ground = surface.find_entities_filtered({ area = area, type = "item-entity" })
+    return #ground == 0
+end
+
+local function do_output(surface, pos, item_name)
+    local belt = surface.find_entity("transport-belt", pos)
+    if belt then
+        local left  = belt.get_transport_line(defines.transport_line.left_line)
+        local right = belt.get_transport_line(defines.transport_line.right_line)
+        if left.can_insert_at_back() then
+            left.insert_at_back({ name = item_name, count = 1 })
+        elseif right.can_insert_at_back() then
+            right.insert_at_back({ name = item_name, count = 1 })
+        end
+        return
+    end
+
+    local area = { { pos.x - 0.5, pos.y - 0.5 }, { pos.x + 0.5, pos.y + 0.5 } }
+    local containers = surface.find_entities_filtered({ area = area, type = { "container", "logistic-container" } })
+    if #containers > 0 then
+        for _, cont in ipairs(containers) do
+            local inv = cont.get_inventory(defines.inventory.chest)
+            if inv and inv.can_insert({ name = item_name, count = 1 }) then
+                inv.insert({ name = item_name, count = 1 })
+                return
+            end
+        end
+        return
+    end
+
+    surface.spill_item_stack({
+        position = pos,
+        stack = { name = item_name, count = 1 },
+        max_radius = 0,
+        use_start_position_on_failure = true,
+        allow_belts = false,
+    })
+end
+
+local function produce(data)
+    if not data.shell.valid then return false end
+
+    for fluid_name, rule in pairs(FLUID_PMR_CONVERSIONS) do
+        local subtank = data.subtanks[fluid_name]
+        if subtank and subtank.valid then
+            local fluid = subtank.get_fluid(1)
+            if fluid and fluid.amount >= rule.fluid_per_item then
+                local pos = output_pos(data.shell)
+                if can_output(data.shell.surface, pos, rule.item) then
+                    subtank.remove_fluid(1, rule.fluid_per_item)
+                    do_output(data.shell.surface, pos, rule.item)
+                end
+            end
+        end
+    end
+
+    return true
+end
+
+function M.on_tick(event)
+    storage.fluid_pmrs = storage.fluid_pmrs or {}
+    local do_drain   = (event.tick % DRAIN_INTERVAL   == 0)
+    local do_produce = (event.tick % PRODUCE_INTERVAL == 0)
+    if not do_drain and not do_produce then return end
+
+    for uid, data in pairs(storage.fluid_pmrs) do
+        local ok = true
+        if do_drain   then ok = pump_to_shell(data) and drain(data) end
+        if ok and do_produce then ok = produce(data) end
+        if not ok then storage.fluid_pmrs[uid] = nil end
     end
 end
 

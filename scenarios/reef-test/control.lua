@@ -157,6 +157,13 @@ local function try_create_platform(player)
         create_build_effect_smoke = false,
     }
     fluid_pmr_source.set_infinity_pipe_filter({ name = "molten-iron", percentage = 1 })
+    -- Output belt: matches produce()'s output_pos (shell position + {2, 0})
+    -- in scripts/fluid-pmr.lua, so iron plates from the molten-iron -> iron-plate
+    -- test conversion have somewhere to land.
+    surface.create_entity{
+        name = "transport-belt", position = { -4, 5 }, force = force,
+        direction = defines.direction.east, create_build_effect_smoke = false,
+    }
 
     player.teleport({ 0, 3 }, surface)
     player.print("[The Reef Test] Platform created. Hub stocked with ores. PMR at (-6,0). Solar panels placed.")
