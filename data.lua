@@ -30,6 +30,6 @@ require("prototypes.technologies.the-reef-cargo-hatch")
 -- Phase 4+: structures
 -- require("prototypes.entities")
 
--- TEMP TEST — remove after confirming sealed-fluid-box add_fluid behavior
--- (see prototypes/_test-sealed-tank.lua)
-require("prototypes._test-sealed-tank")
+-- Fluid PMR
+require("prototypes.fluid-pmr")
+require("prototypes.technologies.the-reef-fluid-pmr")

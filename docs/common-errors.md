@@ -289,7 +289,7 @@ when using relative GUIs.
 - `entity.add_fluid(index, fluid)` → **index first**, fluid table second
 - `entity.remove_fluid(index, amount)` → **index first**, amount second
 **Source:** Runtime error during The Reef Fluid PMR development (feature since deprecated, see `deprecated/fluid-pmr/`): "LuaEntity doesn't contain key fluidbox." Confirmed via runtime-api.json: LuaEntity has no `fluidbox` attribute in 2.x, only `fluidbox_neighbours` and `fluids_count`. Parameter order confirmed by runtime-api.json parameter `order` field (0 = first positional arg).
-**Note:** `entity.fluidbox` still exists on pipe/pump/fluid-tank entities as `LuaFluidBox` (those are a different class). On crafting machines (assembling-machine, chemical-plant type), all fluid access is now through the explicit method API above. **Index is ALWAYS the first argument** — `add_fluid(index, fluid)`, `remove_fluid(index, amount)`, `set_fluid(index, fluid)`. Passing fluid first causes "'index': real number expected got table" at runtime.
+**Note:** **Correction (Fluid PMR v2, 2026-07-01):** the previous version of this note claimed `entity.fluidbox` still exists on pipe/pump/fluid-tank entities as a `LuaFluidBox` class — this is **wrong**. `runtime-api.json` has no `LuaFluidBox` class at all in 2.x; `fluidbox` is not an attribute on `LuaEntity` for any entity type. The explicit method API above (`get_fluid`/`set_fluid`/`add_fluid`/`remove_fluid`/`clear_fluid`/`get_fluid_capacity`) is universal across storage-tank, pump, pipe, and crafting-machine entities — there is no type-specific fluidbox object to fall back on. **Index is ALWAYS the first argument** — `add_fluid(index, fluid)`, `remove_fluid(index, amount)`, `set_fluid(index, fluid)`. Passing fluid first causes "'index': real number expected got table" at runtime.
 
 ---
 
@@ -362,6 +362,15 @@ when using relative GUIs.
 **Correct:** Omit the check entirely — storage tanks have no power consumption and cannot be circuit-disabled; `active` is a crafting-machine property
 **Source:** Factorio API — `active` is defined on `LuaEntity` for types `assembling-machine`, `furnace`, `rocket-silo`, etc. Storage tanks have no enabled/disabled state exposed through the API.
 **Note:** If you need to allow circuit control of a storage-tank-based machine in the future, add a separate `LuaEntity` flag read or a custom circuit signal check.
+
+---
+
+### `"hidden"` is not a valid `EntityPrototypeFlags` value
+
+**Wrong:** `flags = { "not-on-map", "placeable-off-grid", "hidden", ... }` on any entity prototype
+**Correct:** `hidden = true` as a separate top-level field on the prototype; omit "hidden" from `flags` entirely
+**Source:** Factorio loader error during Fluid PMR v2 development: `Error while loading entity prototype "fluid-pmr-intake-tank" (storage-tank): Unknown flag "hidden"`
+**Note:** `EntityPrototypeFlags` (the `flags` array) has a fixed enum of valid values (`not-rotatable`, `placeable-neutral/player/enemy`, `placeable-off-grid`, `player-creation`, `not-on-map`, `not-blueprintable`, `not-deconstructable`, etc.) and `"hidden"` is not among them — confirmed via `prototype-api.json` type `EntityPrototypeFlags`. Visibility is a distinct top-level `hidden` boolean field on `EntityPrototype`, set alongside `flags`, not inside it. This matches the pattern already used by `advanced-cargo-hatch-proxy` in `prototypes/entities.lua` (`hidden = true` as its own field) — the same convention just wasn't followed here initially.
 
 ---
 

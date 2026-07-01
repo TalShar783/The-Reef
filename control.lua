@@ -9,9 +9,13 @@ local cargo_hatch = require("scripts.cargo-hatch")
 -- Basic PMR
 local pmr = require("scripts.pmr")
 
+-- Fluid PMR
+local fluid_pmr = require("scripts.fluid-pmr")
+
 script.on_init(function()
     cargo_hatch.on_init()
     pmr.on_init()
+    fluid_pmr.on_init()
     storage.ithaca_center_patch_placed = false
 end)
 
@@ -25,6 +29,7 @@ local managed_entity_filter = {
     { filter = "name", name = "cargo-hatch" },
     { filter = "name", name = "advanced-cargo-hatch" },
     { filter = "name", name = "basic-pmr" },
+    { filter = "name", name = "fluid-pmr" },
 }
 
 local function dispatch_built(event)
@@ -32,6 +37,8 @@ local function dispatch_built(event)
     if not entity then return end
     if entity.name == "basic-pmr" then
         pmr.on_built(event)
+    elseif entity.name == "fluid-pmr" then
+        fluid_pmr.on_built(event)
     else
         cargo_hatch.on_built(event)
     end
@@ -42,6 +49,8 @@ local function dispatch_removed(event)
     if not entity then return end
     if entity.name == "basic-pmr" then
         pmr.on_removed(event)
+    elseif entity.name == "fluid-pmr" then
+        fluid_pmr.on_removed(event)
     else
         cargo_hatch.on_removed(event)
     end
@@ -65,6 +74,7 @@ script.on_event(defines.events.script_raised_destroy,          dispatch_removed,
 script.on_event(defines.events.on_tick, function(event)
     cargo_hatch.on_tick(event)
     pmr.on_tick(event)
+    fluid_pmr.on_tick(event)
 end)
 script.on_event(defines.events.on_gui_opened,       cargo_hatch.on_gui_opened)
 script.on_event(defines.events.on_gui_closed,       cargo_hatch.on_gui_closed)

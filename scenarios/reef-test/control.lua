@@ -16,6 +16,7 @@ local function give_items(player)
     give(player, "cargo-hatch",                  10)
     give(player, "advanced-cargo-hatch",         10)
     give(player, "basic-pmr",                     5)
+    give(player, "fluid-pmr",                     5)
     give(player, "dilithium-reactor-1",           5)
     give(player, "dilithium-fuel-cell",          50)
     give(player, "dilithium-crystal",           200)
@@ -140,6 +141,22 @@ local function try_create_platform(player)
         name = "basic-pmr", position = { -6, 0 }, force = force,
         create_build_effect_smoke = false, raise_built = true,
     }
+
+    -- Fluid PMR test rig: pre-placed south of the basic PMR, external port
+    -- fed by an infinity-pipe filled with molten-iron so the drain-to-sub-tank
+    -- path can be observed without a real production chain.
+    -- raise_built = true so control.lua's build dispatcher fires and spawns
+    -- the intake tank/pump/sub-tanks (plain surface.create_entity does not
+    -- raise any build event on its own).
+    surface.create_entity{
+        name = "fluid-pmr", position = { -6, 5 }, force = force,
+        create_build_effect_smoke = false, raise_built = true,
+    }
+    local fluid_pmr_source = surface.create_entity{
+        name = "infinity-pipe", position = { -8, 5 }, force = force,
+        create_build_effect_smoke = false,
+    }
+    fluid_pmr_source.set_infinity_pipe_filter({ name = "molten-iron", percentage = 1 })
 
     player.teleport({ 0, 3 }, surface)
     player.print("[The Reef Test] Platform created. Hub stocked with ores. PMR at (-6,0). Solar panels placed.")
