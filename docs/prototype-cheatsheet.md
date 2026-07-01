@@ -281,11 +281,13 @@ When using `production_type = "input"` but needing native crafting to never fire
   default_temperature = 15, base_color = {0,0,0}, flow_color = {0,0,0},
   icon = "__base__/graphics/icons/fluid/crude-oil.png", icon_size = 64 }
 
--- 2. Include it as an ingredient in every display recipe:
+-- 2. Include it as an ingredient in the recipe:
 ingredients = {
   { type = "fluid", name = "molten-iron",    amount = 10 },
+  { type = "fluid", name = "molten-copper",  amount = 10 },
   { type = "fluid", name = "pmr-void-fluid", amount = 1  }, -- never satisfiable
 }
+-- Script owns all production; native crafter can never fire.
 ```
 
 Since `pmr-void-fluid` has no production recipe, the crafter can never satisfy all ingredients — native crafting never fires. Script calls `entity.set_recipe()` to swap between display recipes; the active recipe sets the ghost icon and outputs a circuit signal for free (use "output current recipe as circuit signal" mode).

@@ -283,13 +283,13 @@ when using relative GUIs.
 **Wrong:** `entity.fluidbox[N]` to read or write fluid box contents; `entity.fluidbox.get_capacity(N)`
 **Correct:** Explicit methods on LuaEntity:
 - `entity.get_fluid(index)` → `Fluid?` ({name, amount, temperature} or nil)
-- `entity.set_fluid(fluid, index)` → fluid table **first**, index second; returns amount actually set
+- `entity.set_fluid(index, fluid)` → **index first**, fluid table second
 - `entity.clear_fluid(index)` → empties box N
 - `entity.get_fluid_capacity(index)` → max capacity of box N
-- `entity.add_fluid(fluid, index)` → adds to existing contents of box N
-- `entity.remove_fluid(amount, index)` → removes N units from box N; returns Fluid removed
-**Source:** Runtime error during The Reef Fluid PMR development: "LuaEntity doesn't contain key fluidbox." Confirmed via runtime-api.json: LuaEntity has no `fluidbox` attribute in 2.x, only `fluidbox_neighbours` and `fluids_count`.
-**Note:** `entity.fluidbox` still exists on pipe/pump/fluid-tank entities as `LuaFluidBox` (those are a different class). On crafting machines (assembling-machine, chemical-plant type), all fluid access is now through the explicit method API above. Note the parameter ORDER on `set_fluid`: fluid comes first, index second — opposite of what you might expect.
+- `entity.add_fluid(index, fluid)` → **index first**, fluid table second
+- `entity.remove_fluid(index, amount)` → **index first**, amount second
+**Source:** Runtime error during The Reef Fluid PMR development: "LuaEntity doesn't contain key fluidbox." Confirmed via runtime-api.json: LuaEntity has no `fluidbox` attribute in 2.x, only `fluidbox_neighbours` and `fluids_count`. Parameter order confirmed by runtime-api.json parameter `order` field (0 = first positional arg).
+**Note:** `entity.fluidbox` still exists on pipe/pump/fluid-tank entities as `LuaFluidBox` (those are a different class). On crafting machines (assembling-machine, chemical-plant type), all fluid access is now through the explicit method API above. **Index is ALWAYS the first argument** — `add_fluid(index, fluid)`, `remove_fluid(index, amount)`, `set_fluid(index, fluid)`. Passing fluid first causes "'index': real number expected got table" at runtime.
 
 ---
 

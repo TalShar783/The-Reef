@@ -22,8 +22,7 @@ data:extend({
     },
     effects = {
       { type = "unlock-recipe", recipe = "fluid-pmr" },
-      { type = "unlock-recipe", recipe = "fluid-pmr-iron-plate" },
-      { type = "unlock-recipe", recipe = "fluid-pmr-copper-plate" },
+      { type = "unlock-recipe", recipe = "fluid-pmr-process" },
     },
   },
 })
