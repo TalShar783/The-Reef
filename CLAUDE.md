@@ -11,8 +11,7 @@ The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (li
 **Session start (always, automatically, before responding to any task):**
 1. Check if `HANDOFF.md` exists in the repo root — if so, read it immediately and silently incorporate its state. Do not wait for the user to mention it.
 2. Check if `docs/prototype-index.md` exists. If it does not, generate it immediately before doing anything else — run the PowerShell script in the **Prototype Index** section below.
-3. Ask the user if they want the Factorio log monitor started.
-4. Then proceed with whatever the user asks.
+3. Then proceed with whatever the user asks.
 
 **Workflow:**
 1. Work normally; when an error or unknown arises, grep local game files or read the relevant doc section
@@ -115,11 +114,7 @@ Update `scenarios/reef-test/control.lua` when adding new testable features.
 3. **File → Save As Scenario** saves the world state as the scenario base
 4. `control.lua` handles quality items, research, inventory, and space platform creation (must be scripted via `force.create_space_platform`)
 
-**Real-time log monitoring:** At the start of each session, ask the user whether to start the Factorio log monitor. If yes:
-```
-tail -f "C:/Users/nacus/AppData/Roaming/Factorio/factorio-current.log" | grep --line-buffered -E "Error|Script @__the-reef__|Received [0-9]|the-reef.*caused|non-recoverable"
-```
-Use `persistent = true`. This catches errors the moment they happen without needing the user to paste them.
+**Do not tail or otherwise hold open `factorio-current.log`.** Doing so locks the file and blocks the user from launching Factorio. If log output is needed, ask the user to paste it, or read the file after the game has closed.
 
 ## Space Platform Mechanics — Do Not Apply Surface Rules Here
 
