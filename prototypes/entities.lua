@@ -102,14 +102,16 @@ fluid_pmr.fluid_boxes = {
         },
     },
     {
-        production_type = "none",
-        filter          = "molten-iron",
-        volume          = 500,
+        production_type  = "none",
+        filter           = "molten-iron",
+        volume           = 500,
+        pipe_connections = {},
     },
     {
-        production_type = "none",
-        filter          = "molten-copper",
-        volume          = 500,
+        production_type  = "none",
+        filter           = "molten-copper",
+        volume           = 500,
+        pipe_connections = {},
     },
 }
 fluid_pmr.fluid_boxes_off_when_no_fluid_recipe = false
