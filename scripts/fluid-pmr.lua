@@ -128,23 +128,78 @@ end
 -- in the default storage-tank GUI would be misleading. Replace that default
 -- GUI with a custom frame listing each sub-tank's actual contents instead.
 
-local function build_subtank_gui(player, data)
-    local frame = player.gui.screen.add({
-        type      = "frame",
-        name      = "fluid_pmr_readout",
-        caption   = "Fluid PMR",
-        direction = "vertical",
+local CLOSE_BUTTON_NAME = "fluid_pmr_close_button"
+
+-- Vanilla-style title bar: drag handle over the whole frame, a status light
+-- (green while the intake gate is open/empty, red while a batch is staged
+-- and draining), and a close button — matches the chrome every native
+-- machine GUI has.
+local function add_titlebar(frame, gate_open)
+    local titlebar = frame.add({ type = "flow" })
+    titlebar.drag_target = frame
+    titlebar.add({
+        type = "label",
+        style = "frame_title",
+        caption = "Fluid PMR",
+        ignored_by_interaction = true,
     })
-    frame.auto_center = true
+    local filler = titlebar.add({ type = "empty-widget", style = "draggable_space_header", ignored_by_interaction = true })
+    filler.style.horizontally_stretchable = true
+    filler.style.height = 24
+
+    titlebar.add({
+        type = "sprite",
+        sprite = gate_open and "utility/status_working" or "utility/status_yellow",
+        style = "status_image",
+        tooltip = gate_open and "Ready for input" or "Draining staged fluid",
+    })
+    titlebar.add({
+        type = "sprite-button",
+        name = CLOSE_BUTTON_NAME,
+        style = "frame_action_button",
+        sprite = "utility/close",
+        hovered_sprite = "utility/close_black",
+        clicked_sprite = "utility/close_black",
+        tooltip = { "gui.close" },
+    })
+end
+
+-- One fluid bar per supported fluid: icon, progressbar tinted to the
+-- fluid's own color, and an amount/capacity label — same information a
+-- vanilla fluid gauge shows.
+local function add_fluid_bars(frame, data)
+    local content = frame.add({ type = "frame", style = "inside_shallow_frame_with_padding", direction = "vertical" })
     for _, fluid_name in ipairs(FLUID_PMR_FLUIDS) do
         local subtank = data.subtanks[fluid_name]
         local fluid = subtank and subtank.valid and subtank.get_fluid(1)
         local amount = fluid and fluid.amount or 0
-        frame.add({
-            type    = "label",
-            caption = string.format("%s: %d", fluid_name, amount),
-        })
+        local capacity = (subtank and subtank.valid) and subtank.get_fluid_capacity(1) or 1
+
+        local row = content.add({ type = "flow" })
+        row.style.vertical_align = "center"
+        row.add({ type = "sprite", sprite = "fluid/" .. fluid_name })
+
+        local bar = row.add({ type = "progressbar", value = amount / capacity })
+        bar.style.width = 150
+        local fluid_proto = prototypes.fluid[fluid_name]
+        if fluid_proto and fluid_proto.base_color then
+            bar.style.color = fluid_proto.base_color
+        end
+
+        row.add({ type = "label", caption = string.format("%s: %d / %d", fluid_name, amount, capacity) })
     end
+    return content
+end
+
+local function build_subtank_gui(player, data, gate_open)
+    local frame = player.gui.screen.add({
+        type      = "frame",
+        name      = "fluid_pmr_readout",
+        direction = "vertical",
+    })
+    frame.auto_center = true
+    add_titlebar(frame, gate_open)
+    add_fluid_bars(frame, data)
     return frame
 end
 
@@ -163,7 +218,10 @@ function M.on_gui_opened(event)
     local old = storage.fluid_pmr_guis[event.player_index]
     if old and old.valid then old.destroy() end
 
-    local frame = build_subtank_gui(player, data)
+    local staged = entity.valid and entity.get_fluid(1)
+    local gate_open = not (staged and staged.amount > 0)
+
+    local frame = build_subtank_gui(player, data, gate_open)
     player.opened = frame
     storage.fluid_pmr_guis[event.player_index] = frame
 end
@@ -173,6 +231,13 @@ function M.on_gui_closed(event)
     local frame = storage.fluid_pmr_guis[event.player_index]
     if frame and frame.valid then frame.destroy() end
     storage.fluid_pmr_guis[event.player_index] = nil
+end
+
+function M.on_gui_click(event)
+    if event.element and event.element.valid and event.element.name == CLOSE_BUTTON_NAME then
+        local player = game.get_player(event.player_index)
+        if player then player.opened = nil end
+    end
 end
 
 -- ─── Tick ────────────────────────────────────────────────────────────────────

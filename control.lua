@@ -84,7 +84,10 @@ script.on_event(defines.events.on_gui_closed, function(event)
     cargo_hatch.on_gui_closed(event)
     fluid_pmr.on_gui_closed(event)
 end)
-script.on_event(defines.events.on_gui_click,           cargo_hatch.on_gui_click)
+script.on_event(defines.events.on_gui_click, function(event)
+    cargo_hatch.on_gui_click(event)
+    fluid_pmr.on_gui_click(event)
+end)
 script.on_event(defines.events.on_gui_elem_changed,    cargo_hatch.on_gui_elem_changed)
 
 -- Phase 5+: attractor and shield scripting
