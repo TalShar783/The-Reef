@@ -213,8 +213,11 @@ local function build_subtank_gui(player, data, gate_open)
     -- Positioned along the right edge so it doesn't sit on top of the
     -- native (centered) storage-tank GUI. Draggable via the titlebar if
     -- that's still not out of the way for a given resolution/UI scale.
-    local res = player.display_resolution
-    frame.location = { x = res.width - (frame.style.minimal_width or 250) - 100, y = 200 }
+    -- display_resolution is raw screen pixels; divide by display_scale to
+    -- get the actual usable GUI coordinate space, or this ends up placed
+    -- off-screen for anyone running UI scale != 100%.
+    local usable_width = player.display_resolution.width / player.display_scale
+    frame.location = { x = usable_width - (frame.style.minimal_width or 250) - 100, y = 200 }
 
     return frame
 end
