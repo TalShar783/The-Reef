@@ -9,7 +9,7 @@ data:extend({
   {
     type         = "fluid",
     name         = "pmr-void-fluid",
-    icon         = "__base__/graphics/icons/fluid/empty.png",
+    icon         = "__base__/graphics/icons/fluid/crude-oil.png",
     icon_size    = 64,
     subgroup     = "fluid",
     order        = "z[pmr-void]",
