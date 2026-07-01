@@ -201,7 +201,24 @@ local function add_fluid_bars(frame, data)
     return content
 end
 
+-- Best-effort: find the native storage-tank window so we can dock just
+-- below it. There's no documented way to identify it by name/type, so this
+-- just takes the one other top-level screen element that isn't ours — true
+-- whenever nothing else happens to have a screen GUI open at the same time,
+-- which is the common case for opening an entity. Falls back to nil (caller
+-- picks a fixed position instead) if that assumption doesn't hold.
+local function find_native_window(player)
+    for _, child in pairs(player.gui.screen.children) do
+        if child.valid and child.name ~= "fluid_pmr_readout" then
+            return child
+        end
+    end
+    return nil
+end
+
 local function build_subtank_gui(player, data, gate_open)
+    local native = find_native_window(player)
+
     local frame = player.gui.screen.add({
         type      = "frame",
         name      = "fluid_pmr_readout",
@@ -210,14 +227,19 @@ local function build_subtank_gui(player, data, gate_open)
     add_titlebar(frame, gate_open)
     add_fluid_bars(frame, data)
 
-    -- Positioned along the right edge so it doesn't sit on top of the
-    -- native (centered) storage-tank GUI. Draggable via the titlebar if
-    -- that's still not out of the way for a given resolution/UI scale.
-    -- display_resolution is raw screen pixels; divide by display_scale to
-    -- get the actual usable GUI coordinate space, or this ends up placed
-    -- off-screen for anyone running UI scale != 100%.
-    local usable_width = player.display_resolution.width / player.display_scale
-    frame.location = { x = usable_width - (frame.style.minimal_width or 250) - 100, y = 200 }
+    if native and native.location then
+        -- Dock directly beneath the native window (which includes its own
+        -- circuit-connection subwindow in its height, so this ends up below
+        -- that too).
+        frame.location = { x = native.location.x, y = native.location.y + native.size.y + 8 }
+    else
+        -- Fallback: right edge of the screen. display_resolution is raw
+        -- screen pixels; divide by display_scale to get the actual usable
+        -- GUI coordinate space, or this ends up placed off-screen for
+        -- anyone running UI scale != 100%.
+        local usable_width = player.display_resolution.width / player.display_scale
+        frame.location = { x = usable_width - (frame.style.minimal_width or 250) - 100, y = 200 }
+    end
 
     return frame
 end
