@@ -84,10 +84,12 @@ fluid_pmr.allowed_effects   = nil
 -- production_type="none" on all boxes: native crafter sees no recipe ingredients
 -- and will never fire. Script handles all fluid routing and production.
 --
--- Fluid box index map (used in fluid_pmr.lua):
---   [1] staging / external input (has pipe connection, left face)
---   [2] molten-iron internal tank  (no connections, filtered)
---   [3] molten-copper internal tank (no connections, filtered)
+-- Only one physical fluid box: the staging input (left/west face).
+-- Internal iron/copper accumulation is tracked in script storage (data.fluids),
+-- not in entity fluid boxes. Sealed boxes (pipe_connections={}) silently discard
+-- fluid passed via add_fluid — confirmed in testing.
+-- Fluid box index used in fluid_pmr.lua:
+--   [1] staging / external input (pipe connection, left face)
 fluid_pmr.fluid_boxes = {
     {
         production_type  = "input",
@@ -100,18 +102,6 @@ fluid_pmr.fluid_boxes = {
                 position       = { -1, 0 },
             }
         },
-    },
-    {
-        production_type  = "input",
-        filter           = "molten-iron",
-        volume           = 500,
-        pipe_connections = {},
-    },
-    {
-        production_type  = "input",
-        filter           = "molten-copper",
-        volume           = 500,
-        pipe_connections = {},
     },
 }
 fluid_pmr.fluid_boxes_off_when_no_fluid_recipe = false

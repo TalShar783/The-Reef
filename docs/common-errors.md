@@ -311,6 +311,15 @@ when using relative GUIs.
 
 ---
 
+### `add_fluid` silently discards fluid added to sealed fluid boxes (no pipe connections)
+
+**Wrong:** Using `entity.add_fluid(index, fluid)` to accumulate fluid in a box defined with `pipe_connections = {}`
+**Correct:** Track accumulated fluid amounts in script storage (`data.fluids = { iron=0, copper=0 }`); only use `remove_fluid`/`get_fluid` on boxes with real pipe connections
+**Source:** Confirmed during The Reef Fluid PMR testing — staging fluid was successfully removed via `remove_fluid` but fluid added to the sealed internal boxes via `add_fluid` produced no effect; `get_fluid` on those boxes always returned 0
+**Note:** Sealed fluid boxes (pipe_connections = {}) appear to reject or discard script-inserted fluid. The "internal tank" pattern — sealed box accumulates fluid added via script — does not work. If you need script-side fluid accumulation, store amounts as numbers in the storage table. The sealed boxes are still valid for the prototype (no loader error) but are non-functional as storage.
+
+---
+
 ### Using planet-format spawn definitions on a space-connection
 
 **Wrong:** `asteroid_util.spawn_definitions(route, 0.4)` (with position arg) in a `space-connection` prototype
