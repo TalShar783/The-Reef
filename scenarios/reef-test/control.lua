@@ -1,9 +1,9 @@
--- The Reef — Developer Test Scenario
+-- The Reef -- Developer Test Scenario
 --
 -- Uses on_player_joined_game instead of on_init so player and force
 -- are guaranteed to exist. Platform creation is wrapped in pcall so
 -- a failure (e.g. if create_space_platform is unavailable outside
--- simulation context) degrades gracefully — research + items still work.
+-- simulation context) degrades gracefully -- research + items still work.
 
 local function give(player, name, count)
     if prototypes.item[name] then
@@ -67,6 +67,9 @@ local function equip_armor(player)
     end
 end
 
+-- Blank platform: just the hub, stocked with materials. No pre-placed
+-- entities or foundation beyond what apply_starter_pack gives you --
+-- deploy your own test layout from your blueprint book via /editor.
 local function try_create_platform(player)
     local force   = player.force
     local platform = force.create_space_platform({
@@ -76,17 +79,6 @@ local function try_create_platform(player)
     })
     local hub     = platform.apply_starter_pack()
     local surface = platform.surface
-
-    -- Foundation pad
-    -- Hub footprint is exactly ±4 tiles (selection_box {{-4,-4},{4,4}}); a -5..5
-    -- pad left almost no clearance for anything else. Widened to -8..8.
-    local tiles = {}
-    for x = -8, 8 do
-        for y = -8, 8 do
-            tiles[#tiles + 1] = { name = "space-platform-foundation", position = { x, y } }
-        end
-    end
-    surface.set_tiles(tiles)
 
     -- Stock hub
     if hub and hub.valid then
@@ -103,74 +95,12 @@ local function try_create_platform(player)
         hub.insert{ name = "coal",               count = 100 }
     end
 
-    -- Power: 4 solar panels + 2 accumulators for sustained PMR operation.
-    -- Hub footprint is exactly ±4 tiles in both axes (collision_box ±3.9,
-    -- selection_box ±4) — every position below clears that box on at least
-    -- one axis with margin for its own footprint (solar panel 3x3, accumulator 2x2).
-    for _, pos in ipairs({ {-6, -6}, {6, -6}, {-6, 6}, {6, 6} }) do
-        surface.create_entity{
-            name = "solar-panel", position = pos, force = force,
-            create_build_effect_smoke = false,
-        }
-    end
-    for _, pos in ipairs({ {0, -6}, {0, 6} }) do
-        surface.create_entity{
-            name = "accumulator", position = pos, force = force,
-            create_build_effect_smoke = false,
-        }
-    end
-
-    -- Pre-place cargo hatch + inserter
-    -- Hub occupies ±4 tiles from centre; hatch at x=6 clears it
-    -- raise_built = true so control.lua's build dispatcher fires and registers the hatch
-    -- (plain surface.create_entity does not raise any build event on its own).
-    surface.create_entity{
-        name = "cargo-hatch", position = { 6, 0 }, force = force,
-        create_build_effect_smoke = false, raise_built = true,
-    }
-    surface.create_entity{
-        name = "fast-inserter", position = { 8, 0 },
-        direction = defines.direction.west, force = force,
-        create_build_effect_smoke = false,
-    }
-
-    -- Pre-place PMR west of hub for easy recipe testing (clear of hub, hatch, and power entities)
-    -- raise_built = true so control.lua's build dispatcher fires and spawns the PMR's belt loaders
-    -- (plain surface.create_entity does not raise any build event on its own).
-    surface.create_entity{
-        name = "basic-pmr", position = { -6, 0 }, force = force,
-        create_build_effect_smoke = false, raise_built = true,
-    }
-
-    -- Fluid PMR test rig: pre-placed south of the basic PMR, external port
-    -- fed by an infinity-pipe filled with molten-iron so the drain-to-sub-tank
-    -- path can be observed without a real production chain.
-    -- raise_built = true so control.lua's build dispatcher fires and spawns
-    -- the intake tank/pump/sub-tanks (plain surface.create_entity does not
-    -- raise any build event on its own).
-    surface.create_entity{
-        name = "fluid-pmr", position = { -6, 5 }, force = force,
-        create_build_effect_smoke = false, raise_built = true,
-    }
-    local fluid_pmr_source = surface.create_entity{
-        name = "infinity-pipe", position = { -8, 5 }, force = force,
-        create_build_effect_smoke = false,
-    }
-    fluid_pmr_source.set_infinity_pipe_filter({ name = "molten-iron", percentage = 1 })
-    -- Output belt: matches produce()'s output_pos (shell position + {2, 0})
-    -- in scripts/fluid-pmr.lua, so iron plates from the molten-iron -> iron-plate
-    -- test conversion have somewhere to land.
-    surface.create_entity{
-        name = "transport-belt", position = { -4, 5 }, force = force,
-        direction = defines.direction.east, create_build_effect_smoke = false,
-    }
-
     player.teleport({ 0, 3 }, surface)
-    player.print("[The Reef Test] Platform created. Hub stocked with ores. PMR at (-6,0). Solar panels placed.")
+    player.print("[The Reef Test] Blank platform created. Hub stocked with ores.")
 end
 
 local function setup(player)
-    -- Research first — safest operation
+    -- Research first -- safest operation
     player.force.research_all_technologies()
     player.cheat_mode = true
 
@@ -181,7 +111,7 @@ local function setup(player)
     local ok, err = pcall(try_create_platform, player)
     if not ok then
         player.print("[The Reef Test] Platform creation failed: " .. tostring(err))
-        player.print("[The Reef Test] Launch a platform manually — hub is in your inventory.")
+        player.print("[The Reef Test] Launch a platform manually -- hub is in your inventory.")
         give(player, "space-platform-starter-pack", 1)
     end
 

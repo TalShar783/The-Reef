@@ -251,6 +251,57 @@ data:extend({
     },
   },
 
+  -- Fluid PMR crafter recipes ------------------------------------------------
+  -- "fluid-pmr" category is strictly one-to-one with fluid-pmr-crafter (see
+  -- prototypes/fluid-pmr.lua) — no other machine can craft these, and these
+  -- have no other category. hidden/enabled=true: never shown to or unlocked
+  -- by the player, only ever assigned via entity.set_recipe() from
+  -- scripts/fluid-pmr.lua. Test case only — fluorine substitutes for oil
+  -- purely for testing since oil isn't a tracked PMR fluid.
+  {
+    type     = "recipe",
+    name     = "fluid-pmr-test-assembling-machine-2",
+    icon     = "__base__/graphics/icons/assembling-machine-2.png",
+    icon_size = 64,
+    categories = { "fluid-pmr" },
+    subgroup = "the-reef-processing",
+    order    = "z[pmr]-fluid-a",
+    hidden   = true,
+    enabled  = true,
+    energy_required = 0.5,
+    ingredients = {
+      { type = "fluid", name = "molten-iron",  amount = 10, fluidbox_index = 1 },
+      { type = "fluid", name = "molten-copper", amount = 10, fluidbox_index = 2 },
+      { type = "fluid", name = "fluorine",      amount = 10, fluidbox_index = 3 },
+    },
+    results = {
+      { type = "item", name = "assembling-machine-2", amount = 1 },
+    },
+  },
+
+  -- Second test recipe — used to test the shell's recipe-selection logic
+  -- (prefers the affordable recipe with the most fluid ingredients) once
+  -- both recipes are simultaneously affordable.
+  {
+    type     = "recipe",
+    name     = "fluid-pmr-test-assembling-machine-3",
+    icon     = "__base__/graphics/icons/assembling-machine-3.png",
+    icon_size = 64,
+    categories = { "fluid-pmr" },
+    subgroup = "the-reef-processing",
+    order    = "z[pmr]-fluid-b",
+    hidden   = true,
+    enabled  = true,
+    energy_required = 0.5,
+    ingredients = {
+      { type = "fluid", name = "fluorine", amount = 10, fluidbox_index = 1 },
+      { type = "fluid", name = "lava",     amount = 10, fluidbox_index = 2 },
+    },
+    results = {
+      { type = "item", name = "assembling-machine-3", amount = 1 },
+    },
+  },
+
   -- Recycling --------------------------------------------------------------
   -- Starship Scrap → salvage from alien vessel interiors.
   -- Three tiers: raw materials (high), platform foundations (middling),

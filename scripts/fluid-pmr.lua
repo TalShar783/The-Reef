@@ -15,13 +15,34 @@
 -- remaining capacity. The pump's circuit condition (signal-everything == 0
 -- on the shell) keeps the external network from pushing anything new in
 -- until the drain empties the shell, so no explicit "rejection" logic is
--- needed here. Separately, any sub-tank with a rule in
--- constants/fluid-pmr-conversions.lua converts its fluid into an item onto
--- the shell's east-adjacent tile (belt, then container, then ground) once
--- it has enough staged.
+-- needed here. Separately, once the hidden fluid-pmr-crafter is idle (no
+-- fluid staged in its own fluidboxes), the shell picks the affordable
+-- "fluid-pmr" category recipe with the most fluid ingredients, transfers
+-- exactly enough fluid from the sub-tanks for the maximum number of
+-- affordable batches, and lets the crafter itself (vanilla assembling-
+-- machine logic) consume/produce over however many 0.5s craft cycles that
+-- takes. Finished items are pulled from the crafter's output inventory and
+-- placed the same way the deprecated Fluid PMR did (belt, then container,
+-- then ground).
 
 local FLUID_PMR_FLUIDS = require("constants.fluid-pmr")
-local FLUID_PMR_CONVERSIONS = require("constants.fluid-pmr-conversions")
+
+-- Cached on first use — recipes don't change mid-game, and prototypes.recipe
+-- is available as soon as this module loads at control stage.
+local fluid_pmr_recipes = nil
+local function get_fluid_pmr_recipes()
+    if fluid_pmr_recipes then return fluid_pmr_recipes end
+    fluid_pmr_recipes = {}
+    for name, recipe in pairs(prototypes.recipe) do
+        for _, category in pairs(recipe.categories) do
+            if category == "fluid-pmr" then
+                fluid_pmr_recipes[#fluid_pmr_recipes + 1] = recipe
+                break
+            end
+        end
+    end
+    return fluid_pmr_recipes
+end
 
 local M = {}
 
@@ -90,10 +111,17 @@ local function spawn_assembly(shell)
 
     wire_subtank_readout(shell, subtanks)
 
+    local crafter = surface.create_entity({
+        name     = "fluid-pmr-crafter",
+        position = position,
+        force    = force,
+    })
+
     return {
         shell    = shell,
         pump     = pump,
         subtanks = subtanks,
+        crafter  = crafter,
     }
 end
 
@@ -123,6 +151,7 @@ function M.on_removed(event)
         for _, subtank in pairs(data.subtanks) do
             if subtank.valid then subtank.destroy() end
         end
+        if data.crafter.valid then data.crafter.destroy() end
     end
 
     storage.fluid_pmrs[entity.unit_number] = nil
@@ -142,6 +171,7 @@ local CLOSE_BUTTON_NAME = "fluid_pmr_close_button"
 -- (green while the intake gate is open/empty, red while a batch is staged
 -- and draining), and a close button — matches the chrome every native
 -- machine GUI has.
+-- Returns the status sprite element so M.on_tick can update it live.
 local function add_titlebar(frame, gate_open)
     local titlebar = frame.add({ type = "flow" })
     titlebar.drag_target = frame
@@ -155,7 +185,7 @@ local function add_titlebar(frame, gate_open)
     filler.style.horizontally_stretchable = true
     filler.style.height = 24
 
-    titlebar.add({
+    local status = titlebar.add({
         type = "sprite",
         sprite = gate_open and "utility/status_working" or "utility/status_yellow",
         style = "status_image",
@@ -170,13 +200,24 @@ local function add_titlebar(frame, gate_open)
         clicked_sprite = "utility/close_black",
         tooltip = { "gui.close" },
     })
+
+    return status
+end
+
+-- Sets a titlebar status sprite's appearance from the shell's current gate
+-- state. Shared by initial build and the live tick refresh.
+local function set_status(status, gate_open)
+    status.sprite = gate_open and "utility/status_working" or "utility/status_yellow"
+    status.tooltip = gate_open and "Ready for input" or "Draining staged fluid"
 end
 
 -- One fluid bar per supported fluid: icon, progressbar tinted to the
 -- fluid's own color, and an amount/capacity label — same information a
--- vanilla fluid gauge shows.
+-- vanilla fluid gauge shows. Returns { [fluid_name] = { bar = .., label = .. } }
+-- so M.on_tick can update values in place without rebuilding the GUI.
 local function add_fluid_bars(frame, data)
     local content = frame.add({ type = "frame", style = "inside_shallow_frame_with_padding", direction = "vertical" })
+    local bars = {}
     for _, fluid_name in ipairs(FLUID_PMR_FLUIDS) do
         local subtank = data.subtanks[fluid_name]
         local fluid = subtank and subtank.valid and subtank.get_fluid(1)
@@ -196,9 +237,20 @@ local function add_fluid_bars(frame, data)
             bar.style.color = fluid_proto.base_color
         end
 
-        row.add({ type = "label", caption = { "", display_name, string.format(": %d / %d", amount, capacity) } })
+        local label = row.add({ type = "label", caption = { "", display_name, string.format(": %d / %d", amount, capacity) } })
+
+        bars[fluid_name] = { bar = bar, label = label, display_name = display_name, capacity = capacity }
     end
-    return content
+    return bars
+end
+
+-- Refreshes an already-built fluid bar/label pair from the sub-tank's
+-- current contents — no element creation, so no flicker.
+local function update_fluid_bar(bar_ref, subtank)
+    local fluid = subtank and subtank.valid and subtank.get_fluid(1)
+    local amount = fluid and fluid.amount or 0
+    bar_ref.bar.value = amount / bar_ref.capacity
+    bar_ref.label.caption = { "", bar_ref.display_name, string.format(": %d / %d", amount, bar_ref.capacity) }
 end
 
 -- Docking beneath the native storage-tank window isn't possible: that
@@ -231,18 +283,20 @@ local function panel_location(player, frame)
     end
 end
 
+-- Returns { frame = .., status = .., bars = .. } — status and bars are the
+-- live-updatable element refs used by M.on_tick's refresh loop.
 local function build_subtank_gui(player, data, gate_open)
     local frame = player.gui.screen.add({
         type      = "frame",
         name      = "fluid_pmr_readout",
         direction = "vertical",
     })
-    add_titlebar(frame, gate_open)
-    add_fluid_bars(frame, data)
+    local status = add_titlebar(frame, gate_open)
+    local bars = add_fluid_bars(frame, data)
 
     frame.location = panel_location(player, frame)
 
-    return frame
+    return { frame = frame, status = status, bars = bars }
 end
 
 function M.on_gui_opened(event)
@@ -258,7 +312,7 @@ function M.on_gui_opened(event)
 
     storage.fluid_pmr_guis = storage.fluid_pmr_guis or {}
     local old = storage.fluid_pmr_guis[event.player_index]
-    if old and old.valid then old.destroy() end
+    if old and old.frame and old.frame.valid then old.frame.destroy() end
 
     local staged = entity.valid and entity.get_fluid(1)
     local gate_open = not (staged and staged.amount > 0)
@@ -266,14 +320,15 @@ function M.on_gui_opened(event)
     -- Deliberately not setting player.opened here — leaving it as the
     -- entity itself (the default) is what gives us the native GUI. Our
     -- frame is purely a supplementary window.
-    local frame = build_subtank_gui(player, data, gate_open)
-    storage.fluid_pmr_guis[event.player_index] = frame
+    local gui = build_subtank_gui(player, data, gate_open)
+    gui.unit_number = entity.unit_number
+    storage.fluid_pmr_guis[event.player_index] = gui
 end
 
 function M.on_gui_closed(event)
     storage.fluid_pmr_guis = storage.fluid_pmr_guis or {}
-    local frame = storage.fluid_pmr_guis[event.player_index]
-    if frame and frame.valid then frame.destroy() end
+    local gui = storage.fluid_pmr_guis[event.player_index]
+    if gui and gui.frame and gui.frame.valid then gui.frame.destroy() end
     storage.fluid_pmr_guis[event.player_index] = nil
 end
 
@@ -332,7 +387,15 @@ local function drain(data)
     local existing = subtank.get_fluid(1)
     local existing_amount = existing and existing.amount or 0
     local space = capacity - existing_amount
-    if space <= 0 then return true end
+    if space <= 0 then
+        -- Sub-tank is full — void whatever's staged in the shell rather than
+        -- leaving it stuck there. That backup would otherwise keep the
+        -- intake pump's circuit gate closed (signal-everything == 0 on the
+        -- shell) indefinitely, blocking all other fluids too. Accepted
+        -- tradeoff: no back-pressure friction, just loss.
+        data.shell.remove_fluid(1, fluid.amount)
+        return true
+    end
 
     local take = math.min(fluid.amount, space)
     subtank.add_fluid(1, { name = fluid.name, amount = take, temperature = fluid.temperature })
@@ -353,8 +416,17 @@ local function output_pos(entity)
     return { x = p.x + 2, y = p.y }
 end
 
+-- find_entity("transport-belt", pos) only matches the base-tier belt by its
+-- literal prototype name -- fast/express/turbo belts have different names
+-- but all share type = "transport-belt", so matching by type catches every
+-- tier. (Confirmed as the cause of items silently falling through to the
+-- ground-spill fallback when a turbo-transport-belt was in place.)
+local function find_output_belt(surface, pos)
+    return surface.find_entities_filtered({ position = pos, type = "transport-belt" })[1]
+end
+
 local function can_output(surface, pos, item_name)
-    local belt = surface.find_entity("transport-belt", pos)
+    local belt = find_output_belt(surface, pos)
     if belt then
         local left  = belt.get_transport_line(defines.transport_line.left_line)
         local right = belt.get_transport_line(defines.transport_line.right_line)
@@ -376,7 +448,7 @@ local function can_output(surface, pos, item_name)
 end
 
 local function do_output(surface, pos, item_name)
-    local belt = surface.find_entity("transport-belt", pos)
+    local belt = find_output_belt(surface, pos)
     if belt then
         local left  = belt.get_transport_line(defines.transport_line.left_line)
         local right = belt.get_transport_line(defines.transport_line.right_line)
@@ -410,24 +482,164 @@ local function do_output(surface, pos, item_name)
     })
 end
 
-local function produce(data)
-    if not data.shell.valid then return false end
+-- ─── Crafter feeding ─────────────────────────────────────────────────────────
+-- The crafter is only fed a new batch once its own fluidboxes are fully
+-- drained — this keeps "exactly enough fluid, no leftover" true by
+-- construction (n batches worth of each ingredient divides out to exactly
+-- 0 remaining once the crafter finishes its n-th craft). If any fluid is
+-- somehow still sitting in the crafter's boxes when this runs, it's simply
+-- left alone until it drains — no voiding needed here, that's only for the
+-- (deferred) input-tank-on-destruction policy.
 
-    for fluid_name, rule in pairs(FLUID_PMR_CONVERSIONS) do
-        local subtank = data.subtanks[fluid_name]
-        if subtank and subtank.valid then
-            local fluid = subtank.get_fluid(1)
-            if fluid and fluid.amount >= rule.fluid_per_item then
-                local pos = output_pos(data.shell)
-                if can_output(data.shell.surface, pos, rule.item) then
-                    subtank.remove_fluid(1, rule.fluid_per_item)
-                    do_output(data.shell.surface, pos, rule.item)
-                end
+-- Only the fluidbox indices the crafter's *currently assigned* recipe
+-- actually references are valid to query — a recipe with fewer fluid
+-- ingredients than the crafter's declared 3 boxes leaves the unused
+-- index(es) genuinely out of range (not just empty), confirmed by an
+-- out-of-bounds get_fluid crash when switching from a 3-ingredient recipe
+-- to a 2-ingredient one. No recipe assigned means nothing to sum.
+local function crafter_fluid_total(crafter)
+    local recipe = crafter.get_recipe()
+    if not recipe then return 0 end
+
+    local total = 0
+    for _, ingredient in pairs(recipe.ingredients) do
+        if ingredient.type == "fluid" then
+            local fluid = crafter.get_fluid(ingredient.fluidbox_index)
+            if fluid then total = total + fluid.amount end
+        end
+    end
+    return total
+end
+
+-- Picks the affordable "fluid-pmr" recipe with the most fluid ingredients,
+-- given the sub-tanks' current contents. Returns recipe, batch count (the
+-- maximum number of full crafts affordable right now) — or nil if nothing
+-- is affordable.
+local function pick_recipe(data)
+    local best, best_batches, best_count = nil, 0, -1
+
+    for _, recipe in pairs(get_fluid_pmr_recipes()) do
+        local batches = math.huge
+        local affordable = true
+
+        for _, ingredient in pairs(recipe.ingredients) do
+            if ingredient.type ~= "fluid" then
+                affordable = false
+                break
+            end
+            local subtank = data.subtanks[ingredient.name]
+            local fluid = subtank and subtank.valid and subtank.get_fluid(1)
+            local amount = fluid and fluid.amount or 0
+            local possible = math.floor(amount / ingredient.amount)
+            if possible < batches then batches = possible end
+        end
+
+        if affordable and batches >= 1 then
+            local ingredient_count = #recipe.ingredients
+            if ingredient_count > best_count then
+                best, best_batches, best_count = recipe, batches, ingredient_count
             end
         end
     end
 
+    return best, best_batches
+end
+
+-- Removes exactly batches * ingredient.amount from each relevant sub-tank
+-- and inserts it into the crafter's matching fluidbox (fluidbox_index set
+-- explicitly on each ingredient in prototypes/recipes.lua).
+local function feed_crafter(data, recipe, batches)
+    local crafter = data.crafter
+    if crafter.get_recipe() ~= recipe then
+        crafter.set_recipe(recipe)
+    end
+
+    -- TEMP DEBUG (remove once Fluid PMR crafting is confirmed working)
+    log(string.format(
+        "fluid-pmr %d: feeding crafter recipe '%s' x%d batches",
+        data.shell.unit_number, recipe.name, batches
+    ))
+
+    for _, ingredient in pairs(recipe.ingredients) do
+        local subtank = data.subtanks[ingredient.name]
+        local fluid = subtank.get_fluid(1)
+        local amount = ingredient.amount * batches
+        subtank.remove_fluid(1, amount)
+        crafter.add_fluid(ingredient.fluidbox_index, {
+            name        = ingredient.name,
+            amount      = amount,
+            temperature = fluid.temperature,
+        })
+    end
+end
+
+-- ─── Item output ─────────────────────────────────────────────────────────────
+-- Pulls finished items out of the crafter's own output inventory (vanilla
+-- assembling-machine logic fills this automatically once fed) and places
+-- them the same way the deprecated Fluid PMR did.
+
+local function drain_crafter_output(data)
+    local crafter = data.crafter
+    if not crafter.valid then return end
+
+    local inventory = crafter.get_output_inventory()
+    if not inventory then return end
+
+    local pos = output_pos(data.shell)
+    local surface = data.shell.surface
+
+    for i = 1, #inventory do
+        local stack = inventory[i]
+        while stack and stack.valid_for_read and stack.count > 0
+            and can_output(surface, pos, stack.name)
+        do
+            -- TEMP DEBUG (remove once Fluid PMR crafting is confirmed working)
+            log(string.format(
+                "fluid-pmr %d: outputting 1x '%s' from crafter", data.shell.unit_number, stack.name
+            ))
+            do_output(surface, pos, stack.name)
+            stack.count = stack.count - 1
+        end
+    end
+end
+
+local function produce(data)
+    if not data.shell.valid or not data.crafter.valid then return false end
+
+    if crafter_fluid_total(data.crafter) == 0 then
+        local recipe, batches = pick_recipe(data)
+        if recipe then
+            feed_crafter(data, recipe, batches)
+        end
+    end
+
+    drain_crafter_output(data)
+
     return true
+end
+
+-- Refreshes every open fluid-bar panel from its PMR's current sub-tank
+-- contents. Runs on the same cadence as the drain step, since that's the
+-- only thing that changes sub-tank amounts.
+local function refresh_open_guis()
+    storage.fluid_pmr_guis = storage.fluid_pmr_guis or {}
+    for player_index, gui in pairs(storage.fluid_pmr_guis) do
+        if not gui.frame or not gui.frame.valid then
+            storage.fluid_pmr_guis[player_index] = nil
+        else
+            local data = storage.fluid_pmrs[gui.unit_number]
+            if not data or not data.shell.valid then
+                gui.frame.destroy()
+                storage.fluid_pmr_guis[player_index] = nil
+            else
+                local staged = data.shell.get_fluid(1)
+                set_status(gui.status, not (staged and staged.amount > 0))
+                for fluid_name, bar_ref in pairs(gui.bars) do
+                    update_fluid_bar(bar_ref, data.subtanks[fluid_name])
+                end
+            end
+        end
+    end
 end
 
 function M.on_tick(event)
@@ -442,6 +654,8 @@ function M.on_tick(event)
         if ok and do_produce then ok = produce(data) end
         if not ok then storage.fluid_pmrs[uid] = nil end
     end
+
+    if do_drain then refresh_open_guis() end
 end
 
 return M

@@ -27,6 +27,14 @@
 --      connections at all, one per supported fluid. Never touch the fluid
 --      network; only ever written to via entity.add_fluid() from script.
 --
+-- 4. fluid-pmr-crafter — hidden assembling-machine (chemical-plant style:
+--    fluid_boxes_off_when_no_fluid_recipe = false), sole user of the
+--    "fluid-pmr" crafting category. All fluid boxes are sealed (no
+--    pipe_connections) and script-fed from the sub-tanks; it otherwise
+--    crafts exactly like a normal assembling machine — vanilla game logic
+--    handles multi-batch consumption/production once fluid is staged and a
+--    recipe is set. See scripts/fluid-pmr.lua for the selection/feed logic.
+
 local FLUID_PMR_FLUIDS = require("constants.fluid-pmr")
 
 -- ─── 1. Shell / intake tank ──────────────────────────────────────────────────
@@ -100,3 +108,56 @@ for _, fluid_name in ipairs(FLUID_PMR_FLUIDS) do
 
     data:extend({ subtank })
 end
+
+-- ─── 4. Crafting category + hidden crafter ──────────────────────────────────
+-- "fluid-pmr" is strictly one-to-one: fluid-pmr-crafter is the only entity
+-- with this crafting category, and every recipe in this category has no
+-- other category. Nothing else in the game can craft these recipes, and
+-- this crafter can't be assigned anything else.
+
+data:extend({
+    { type = "recipe-category", name = "fluid-pmr" },
+})
+
+-- Chemical-plant-style base: fluid_boxes_off_when_no_fluid_recipe = false
+-- keeps the (invisible, irrelevant) fluid boxes from toggling visibility.
+-- All graphics/animation fields are stripped since the entity is hidden and
+-- never selectable/rendered — mirrors how the pump and sub-tanks clear their
+-- own render fields above. Power draw matches chemical-plant exactly
+-- (confirmed from base/prototypes/entity/entities.lua): 210kW electric,
+-- secondary-input, 4 pollution/minute.
+local crafter = table.deepcopy(data.raw["assembling-machine"]["chemical-plant"])
+crafter.name           = "fluid-pmr-crafter"
+crafter.minable        = nil
+crafter.collision_mask = { layers = {} }
+crafter.collision_box  = {{ -1, -1 }, { 1, 1 }}
+crafter.hidden         = true
+crafter.flags          = { "not-on-map", "placeable-off-grid", "not-blueprintable", "not-deconstructable" }
+crafter.selectable_in_game = false
+crafter.circuit_connector  = nil
+crafter.crafting_categories = { "fluid-pmr" }
+crafter.fluid_boxes_off_when_no_fluid_recipe = false
+crafter.energy_source = {
+    type               = "electric",
+    usage_priority     = "secondary-input",
+    emissions_per_minute = { pollution = 4 },
+}
+crafter.energy_usage = "210kW"
+
+-- Three sealed input fluid boxes, matching the test recipe's three fluid
+-- ingredients (fluidbox_index 1/2/3 in prototypes/recipes.lua). No
+-- pipe_connections — script-fed only, same pattern as the sub-tanks.
+crafter.fluid_boxes = {
+    { production_type = "input", volume = 25000, pipe_connections = {} },
+    { production_type = "input", volume = 25000, pipe_connections = {} },
+    { production_type = "input", volume = 25000, pipe_connections = {} },
+}
+
+crafter.graphics_set          = nil
+crafter.graphics_set_flipped  = nil
+crafter.working_visualisations = nil
+crafter.water_reflection      = nil
+crafter.animation             = nil
+crafter.status_colors         = nil
+
+data:extend({ crafter })
