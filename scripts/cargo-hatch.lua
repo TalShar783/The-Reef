@@ -4,9 +4,10 @@
 -- hidden proxy-container (cargo-hatch-proxy) on the same tiles that exposes
 -- the platform hub's main inventory directly to inserters — native engine
 -- passthrough, no per-item scripting and no configuration GUI. The bay
--- itself has allow_unloading = false and inventory_size_bonus = 0, so the
--- proxy is the ONLY item path; connecting the bay to the hub network is a
--- functional requirement (see connection gate below), not an item path.
+-- itself has allow_unloading = false (and only the engine-minimum inventory
+-- bonus), so the proxy is the ONLY item path; connecting the bay to the hub
+-- network is a functional requirement (see connection gate below), not an
+-- item path.
 --
 -- Script enforces, per force, all derived live from technology levels
 -- (force.technologies[...].level — never event counters, so script-researched

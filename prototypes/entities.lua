@@ -130,7 +130,8 @@ hatch.name                 = "cargo-hatch"
 hatch.icon                 = "__space-age__/graphics/icons/cargo-unloading-bay.png"
 hatch.icon_size            = 64
 hatch.minable              = { mining_time = 0.5, result = "cargo-hatch" }
-hatch.inventory_size_bonus = 0        -- must not extend the hub inventory
+hatch.inventory_size_bonus = 5        -- engine minimum is 1 ("Cannot be 0");
+                                      -- a few slots is acceptable for a 4×4
 hatch.allow_unloading      = false    -- all flow goes through the proxy
 hatch.use_unloading_distance_limit = false   -- planet landing-pad concept, n/a here
 hatch.surface_conditions   = {{ property = "gravity", min = 0, max = 0 }}
