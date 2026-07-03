@@ -231,13 +231,28 @@ end
 
 local function flush_buffer(data)
     if not data.entity.valid then return end
-    local inv   = data.entity.get_inventory(defines.inventory.chest)
+    local inv = data.entity.get_inventory(defines.inventory.chest)
+    if not inv then return end
     local cargo = get_cargo_inventory(data.entity.surface)
-    if not inv or not cargo then return end
     for i = 1, #inv do
         local stack = inv[i]
         if stack.valid_for_read then
-            cargo.insert(stack)
+            local moved = cargo and cargo.insert(stack) or 0
+            if moved < stack.count then
+                -- Hub full (or missing) — spill the remainder at the hatch
+                -- instead of destroying it with the stack.clear() below.
+                data.entity.surface.spill_item_stack({
+                    position                      = data.entity.position,
+                    stack                         = {
+                        name    = stack.name,
+                        count   = stack.count - moved,
+                        quality = stack.quality.name,
+                    },
+                    enable_looted                 = false,
+                    allow_belts                   = false,
+                    use_start_position_on_failure = true,
+                })
+            end
             stack.clear()
         end
     end
