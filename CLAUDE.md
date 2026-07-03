@@ -22,6 +22,16 @@ When a new Factorio-specific error is diagnosed, file the finding per SKILL.md �
 - **API JSONs:** `.skill-scratch/runtime-api.json`, `.skill-scratch/prototype-api.json` (minified — do not grep these directly) and pretty-printed greppable copies `.skill-scratch/*.pretty.json`. If the pretty copies are missing, regenerate: `python -c "import json; [json.dump(json.load(open(f'.skill-scratch/{n}.json')), open(f'.skill-scratch/{n}.pretty.json','w'), indent=1) for n in ('runtime-api','prototype-api')]"`
 - **Reference mods:** `.skill-scratch/cerys/`, `.skill-scratch/maraxsis/`, etc. — local-only, not committed; for pattern inspiration during The Reef development, never reproduced verbatim.
 
+To repopulate `.skill-scratch/` on a fresh clone:
+```bash
+git clone --depth=1 https://github.com/wube/factorio-data.git .skill-scratch/factorio-data
+git clone --depth=1 https://github.com/notnotmelon/maraxsis.git .skill-scratch/maraxsis
+git clone --depth=1 https://github.com/danielmartin0/Cerys-Moon-of-Fulgora.git .skill-scratch/cerys
+curl -s https://lua-api.factorio.com/latest/runtime-api.json -o .skill-scratch/runtime-api.json
+curl -s https://lua-api.factorio.com/latest/prototype-api.json -o .skill-scratch/prototype-api.json
+```
+Then generate the pretty-printed copies (command above).
+
 ## Session Start (always, automatically, before responding to any task)
 
 1. If `HANDOFF.md` exists in the repo root, read it immediately and silently incorporate its state.
