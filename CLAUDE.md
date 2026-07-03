@@ -2,164 +2,70 @@
 
 ## Project Overview
 
-The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (like Shattered Planet) with asteroid/scrap mechanics. Dependencies: flib, PlanetsLib.
+The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (like Shattered Planet) with asteroid/scrap mechanics, plus the Ithaca planet. Dependencies: flib, PlanetsLib.
 
-## How to Use This Skill
+## Factorio Modding Skill
 
-**Do not preload the docs/ files.** Read them on demand when an error or unknown arises. Tool call results (Grep, Read, Bash) fade naturally via compaction; permanent @-loading costs tokens every session regardless of relevance.
+All general Factorio 2.x knowledge lives in `.claude/skills/factorio-modding/` — read `SKILL.md` before writing any mod code, and its `references/` on demand:
 
-**Session start (always, automatically, before responding to any task):**
-1. Check if `HANDOFF.md` exists in the repo root — if so, read it immediately and silently incorporate its state. Do not wait for the user to mention it.
-2. Check if `docs/prototype-index.md` exists. If it does not, generate it immediately before doing anything else — run the PowerShell script in the **Prototype Index** section below.
-3. Then proceed with whatever the user asks.
+- `patterns.md` — read **before designing any new machine or mechanic**
+- `breaking-changes-2x.md` — check **first** when a familiar-looking field/method errors
+- `constraints.md`, `space-platforms.md` — verified engine facts by domain
+- `prototype-index.md` — scan before choosing a prototype type for any new entity
+- `graveyard.md` — known-dead approaches; check before anything clever with fluid boxes or entity visibility
 
-**Workflow:**
-1. Work normally; when an error or unknown arises, grep local game files or read the relevant doc section
-2. Solve it, add confirmed findings to `docs/common-errors.md`, move on
+When a new Factorio-specific error is diagnosed, file the finding per SKILL.md § Maintaining this skill, **in the same commit as the fix**. Keep the skill project-agnostic — Reef-specific state belongs here or in HANDOFF.md.
 
-**Handoff system:**
+## Local Source Material (for the skill's verification workflow)
+
+- **Game files:** `C:\Program Files (x86)\Steam\steamapps\common\Factorio\data\`
+- **API JSONs:** `.skill-scratch/runtime-api.json`, `.skill-scratch/prototype-api.json` (minified — do not grep these directly) and pretty-printed greppable copies `.skill-scratch/*.pretty.json`. If the pretty copies are missing, regenerate: `python -c "import json; [json.dump(json.load(open(f'.skill-scratch/{n}.json')), open(f'.skill-scratch/{n}.pretty.json','w'), indent=1) for n in ('runtime-api','prototype-api')]"`
+- **Reference mods:** `.skill-scratch/cerys/`, `.skill-scratch/maraxsis/`, etc. — local-only, not committed; for pattern inspiration during The Reef development, never reproduced verbatim.
+
+## Session Start (always, automatically, before responding to any task)
+
+1. If `HANDOFF.md` exists in the repo root, read it immediately and silently incorporate its state.
+2. Then proceed with whatever the user asks.
+
+## Handoff System
+
 At every natural stopping point (phase complete, end of day, pre-restart), write `HANDOFF.md` in the repo root:
+
 ```
 # The Reef — Session Handoff
-Current phase: [e.g. Phase 4 complete, starting Phase 5]
+Current phase: [...]
 Branch: BUILD-1
-Last decisions: [3-5 bullet points of what was just decided/built]
-Next immediate step: [single clear next action]
+Last decisions: [3-5 bullets]
+Next immediate step: [single clear action]
 Open questions: [anything unresolved]
-Recent gotchas: [any new common-errors.md entries worth highlighting]
-```
-HANDOFF.md is gitignored and ephemeral. The PreCompact hook backs it up; the PostCompact hook injects it back into context after compaction. Delete it when starting a genuinely new phase.
-
-**Suggest a handoff-and-restart** when:
-- A feature or phase just completed cleanly
-- The session has been long and responses are feeling less specific
-- The user is about to switch to a significantly different area of the mod
-- After a series of rapid error-fix cycles that created a lot of noise in context
-
-**Compaction vs new session:**
-- `/compact` = same session continues with compressed history. Use mid-feature. HANDOFF.md is injected back automatically via PostCompact hook.
-- New conversation window = truly fresh. CLAUDE.md reloads. Better for phase transitions or next-day starts. Read HANDOFF.md explicitly at the start.
-
-**When to stay in the same session:**
-- Actively debugging a specific bug
-- Mid-feature with file contents and architecture in mind
-- Rapid iteration cycles (error → fix → test → error)
-
-## Prototype Index
-
-`docs/prototype-index.md` is a flat table of all 279 Factorio 2.x prototype classes (name, typename, one-line description). **Read it before choosing a prototype type for any new entity.** Factorio has native types that solve problems you would otherwise script manually (e.g. `proxy-container`, `lane-splitter`) — always scan the index first so you do not miss a better fit.
-
-**If the file is missing**, regenerate it with this PowerShell script (run from the repo root):
-```powershell
-$json = Get-Content ".skill-scratch/prototype-api.json" -Raw | ConvertFrom-Json
-$sb = [System.Text.StringBuilder]::new()
-$null = $sb.AppendLine("# Factorio 2.x Prototype Index")
-$null = $sb.AppendLine("")
-$null = $sb.AppendLine("Generated from prototype-api.json (api_version $($json.api_version), game $($json.application_version)).")
-$null = $sb.AppendLine("Entries marked **[NO DESC]** have blank descriptions in the API — fill these in manually.")
-$null = $sb.AppendLine("")
-$null = $sb.AppendLine("| Prototype class | typename | Description |")
-$null = $sb.AppendLine("|---|---|---|")
-foreach ($p in $json.prototypes | Sort-Object name) {
-    $desc = [regex]::Replace($p.description.Trim(), '\[([^\]]+)\]\([^)]+\)', '$1')
-    $first = ($desc -split '\.')[0].Trim()
-    $abstractTag = if ($p.abstract -eq $true) { " *(abstract)*" } else { "" }
-    $tn = if ($p.typename) { $p.typename } else { "*(abstract)*" }
-    if (-not $desc) { $null = $sb.AppendLine("| $($p.name)$abstractTag | $tn | **[NO DESC]** |") }
-    else            { $null = $sb.AppendLine("| $($p.name)$abstractTag | $tn | $first |") }
-}
-$null = $sb.AppendLine("")
-$null = $sb.AppendLine("---")
-$null = $sb.AppendLine("*Abstract prototypes are base types only — not used directly in data:extend.*")
-[System.IO.File]::WriteAllText("docs/prototype-index.md", $sb.ToString(), [System.Text.Encoding]::UTF8)
+Recent gotchas: [new skill entries worth highlighting]
 ```
 
-## Reference Documentation
+HANDOFF.md is gitignored and ephemeral; the PreCompact/PostCompact hooks back it up and re-inject it. Delete it when starting a genuinely new phase.
 
-Available on demand in `docs/` — read these when specifically needed:
-- `docs/prototype-index.md` — see **Prototype Index** above.
-- `docs/prototype-cheatsheet.md` — confirmed prototype field names, subgroups, collision box sizing, recipe subgroups
-- `docs/space-age-api.md` — Space Age runtime events, LuaSpacePlatform, asteroid spawning API
-- `docs/common-errors.md` — confirmed error patterns from live development; check this before using any field or method that looks familiar from 1.x or training data
-
-**When to read them:** when hitting an error that might be a known pattern, or when starting work on a prototype type covered in the cheatsheet.
-
-## Source of Truth — Always Prefer Local Files
-
-**Never guess field names, item names, entity names, event names, or API methods from training data.** Training data is stale and Factorio changes between versions.
-
-Priority order for any unknown:
-1. **Game files on disk:** `C:\Program Files (x86)\Steam\steamapps\common\Factorio\data\`
-2. **Locally cached API JSON:** `.skill-scratch/runtime-api.json`, `.skill-scratch/prototype-api.json`
-3. **Reference mod source:** `.skill-scratch/cerys/`, `.skill-scratch/maraxsis/` (these are local-only, not committed — for inspiration and pattern reference during The Reef development only)
-4. **Skill docs:** `docs/common-errors.md`, `docs/prototype-cheatsheet.md`
-5. **Ask the user** if nothing else confirms it
-
-If a name cannot be confirmed from any of the above: say so and ask rather than guessing.
-
-**Querying the API JSON files:** Use `Bash` with `grep` (RTK rewrites to `rtk grep` via hook) on `.skill-scratch/runtime-api.json` and `.skill-scratch/prototype-api.json` — do **not** use PowerShell `Get-Content` + `ConvertFrom-Json`. Examples:
-- Find a method: `grep -A 20 '"name": "insert_at_back"' .skill-scratch/runtime-api.json`
-- Find a define: `grep "crafter_input" .skill-scratch/runtime-api.json`
-- Find a prototype's properties: `grep -A 10 '"CraftingMachinePrototype"' .skill-scratch/prototype-api.json`
+**Suggest a handoff-and-restart** when a feature/phase completes cleanly, the session is long and responses feel less specific, the user is switching to a different area of the mod, or after noisy error-fix cycles. `/compact` = same session, mid-feature; new window = fresh start for phase transitions (read HANDOFF.md explicitly).
 
 ## Testing
 
-Use the **reef-test scenario** (`scenarios/reef-test/`) instead of playing through the game. Launch from Factorio's main menu → Scenarios. It starts with all tech researched, legendary mech armor, and the player on a pre-built space platform with a stocked hub.
+Use the **reef-test scenario** (`scenarios/reef-test/`) — launched from Factorio's main menu → Scenarios. All tech researched, legendary mech armor, player on a pre-built platform with stocked hub. Update `scenarios/reef-test/control.lua` when adding new testable features.
 
-Update `scenarios/reef-test/control.lua` when adding new testable features.
+Scenario world state is set up visually: any save → `/editor` → build → File → Save As Scenario; `control.lua` scripts research/inventory/platform creation (`force.create_space_platform`).
 
-**Setting up scenario world state visually:**
-1. Start any save → `/editor` for free entity placement
-2. Set up entities, tiles, and surfaces as desired
-3. **File → Save As Scenario** saves the world state as the scenario base
-4. `control.lua` handles quality items, research, inventory, and space platform creation (must be scripted via `force.create_space_platform`)
+**Do not tail or hold open `factorio-current.log`** — it locks the file and blocks the user from launching Factorio. Ask the user to paste log output, or read the file after the game closes.
 
-**Do not tail or otherwise hold open `factorio-current.log`.** Doing so locks the file and blocks the user from launching Factorio. If log output is needed, ask the user to paste it, or read the file after the game has closed.
+**Do not self-test in-game.** Fix load errors, then hand off to the user for manual verification.
 
-## Space Platform Mechanics — Do Not Apply Surface Rules Here
+## Reef-Specific Design Facts
 
-Space platforms are a fundamentally different environment from planet surfaces. Before designing or reasoning about anything platform-related, apply these rules:
-
-**What does NOT exist on space platforms:**
-- Roboports, construction/logistic robots, logistic networks — none of these can be placed on platforms. There is no logistic network on a platform at all.
-- Vanilla chests (wooden, iron, steel, all logistic chest variants) — Space Age data-updates adds a gravity > 0.1 condition to all of them, blocking placement on platforms (gravity = 0). Any container placed on a platform must explicitly set `surface_conditions` to allow gravity = 0.
-- Cargo rockets and cargo pods — these travel between a platform and a planet surface only. There is no rocket-based transfer between two platforms.
-
-**How platform inventory actually works:**
-- The `space-platform-hub` entity holds the platform's shared cargo inventory. Everything on the platform is logistically connected through it.
-- Inserters on a platform pull from and push to the hub inventory directly.
-- In 2.1, inserters and machines with "enable logistic connection" wirelessly read the hub's contents (analogous to reading a logistic network on a surface, but the hub replaces the network). This is not the same as logistic chests existing on the platform.
-
-**Platform-to-platform transfer (2.1):**
-- Platforms can request items from other platforms via the orbital request system when they are in orbit of the same body.
-- This is the only mechanism for platform-to-platform item transfer. It does not involve rockets or cargo pods.
-
-**Non-landable space locations (The Reef, Lethe Point, Shattered Planet):**
-- These have no surface. Players cannot land there, build there, or send cargo rockets there.
-- Platforms orbit there and interact with the location's asteroid/resource mechanics from orbit.
-- Lethe Point specifically exists for platform-to-platform exchange using the 2.1 orbital request system. No surface structures, no rockets, no landing pads.
-
-**When designing platform structures for The Reef:**
-- Always check `surface_conditions` — any custom entity that should be platform-placeable needs `gravity = 0` (max = 0).
-- The hub is the inventory source of truth. Scripts that read platform cargo use `surface.find_entities_filtered({ type = "space-platform-hub" })[1].get_inventory(1)`.
-- Do not assume any surface-side logistics mechanic (belts excepted) transfers to platform design.
-
-## Key Constraints
-
-- Target: Factorio 2.x / Space Age only — no 1.x compatibility shims
-- The Reef is a `space-location` (outer areas) and `planet` (Ithaca) — verify type differences before writing prototypes
-- Reference mods (Cerys, Maraxsis, Metal & Stars) are for local development inspiration only — their source code is not committed to this repo and must not be reproduced verbatim
-- Check `docs/common-errors.md` before using any API method or prototype field that looks familiar from 1.x or training data
+- The Reef is a `space-location` (outer areas) plus a `planet` (Ithaca).
+- **Lethe Point** is a non-landable space-location existing for platform-to-platform exchange via the 2.1 orbital request system — no surface structures, no rockets, no landing pads.
 
 ## Scope Discipline
 
-Research and investigation (grepping, reading docs, exploring the codebase, checking the API JSON) can and should be broad. **Implementation is the opposite** — when told to do something, do it in the most straightforward, narrow way that satisfies the literal request. Don't add extra verification, defensive scaffolding, workarounds, or "helpful" scope expansion beyond what was asked.
-
-If an instruction looks like it will fail or won't work as anticipated, do it anyway. Flag the concern once, briefly, then proceed as instructed — don't silently substitute your own approach or work around a problem that wasn't specified. This includes not taking unrequested side-effect actions (launching the game, running processes, starting background monitors) unless explicitly asked.
+Research broadly; implement narrowly and literally. When told to do something, do it in the most straightforward way that satisfies the literal request — no extra verification scaffolding, workarounds, or scope expansion. If an instruction looks like it will fail, flag the concern once, briefly, then proceed as instructed. No unrequested side-effect actions (launching the game, background monitors) unless explicitly asked. Surface blockers and unknowns immediately instead of silently improvising.
 
 ## Git
 
 - Branch: `BUILD-1` (all commits go here, not main)
 - **Commit AND push before starting any task. Commit AND push after completing it.**
-- Never batch multiple tasks into one commit — one commit per task, before and after
-- Push immediately after every commit, no exceptions
+- One commit per task — never batch; push immediately after every commit, no exceptions.

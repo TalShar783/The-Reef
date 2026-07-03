@@ -12,7 +12,8 @@ by script (`scripts/fluid_pmr.lua`) rather than the native crafter. Storage
 tanks were used instead of `assembling-machine`/`chemical-plant` because those
 entity types filter fluid boxes to the active recipe's ingredient, making
 "one pipe that accepts multiple fluid types" impossible — see
-`docs/common-errors.md` for the confirmed API constraints this ran into.
+`.claude/skills/factorio-modding/references/constraints.md` (§ Fluids) and
+`graveyard.md` there for the confirmed API constraints this ran into.
 
 Status at the time of removal: built but untested (see `HANDOFF.md` history —
 last push before removal was 407a7bc).
