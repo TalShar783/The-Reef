@@ -21,7 +21,10 @@ Scope: Factorio 2.x / Space Age only. No 1.x compatibility. Training-data knowle
 4. **Multiple fluid boxes on one entity, handled by anything other than the game's native crafting logic, is a red flag.**
    Crafting-machine fluid boxes are owned by the recipe system (filtered to and limited by the active recipe's fluid ingredients). If you need free-form fluid storage or routing, use `storage-tank` / `pump` entities and compose. See `references/constraints.md` § Fluids.
 
-5. **Never guess identifiers.** Prototype names, field names, event names, icon paths, defines — all of them. A guessed name usually fails silently or crashes at load with no suggestion. If a name cannot be confirmed from the sources below, stop and ask.
+5. **Enumerate the variants before you pick one.**
+   Most choices in the Factorio API are drawn from a closed set the engine already defines: `inventory_type` on containers, `production_type` on fluid boxes, `energy_source` types, `defines.relative_gui_type` anchors, `EntityPrototypeFlags`, `entity_status_diode`, GUI element types… Before setting any enum/union-typed field or choosing where a capability comes from, **dump the actual option list** (from the API JSONs or the relevant `defines` table) and choose deliberately. Ad-hoc workarounds are usually the symptom of never having seen the variant that solves the problem natively (e.g. scripting slot restrictions when `inventory_type = "with_filters_and_bar"` exists). This is the field-level twin of the prototype-index rule.
+
+6. **Never guess identifiers.** Prototype names, field names, event names, icon paths, defines — all of them. A guessed name usually fails silently or crashes at load with no suggestion. If a name cannot be confirmed from the sources below, stop and ask.
 
 ## Verifying names and signatures (source-of-truth order)
 

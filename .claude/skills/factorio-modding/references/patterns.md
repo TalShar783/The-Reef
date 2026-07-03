@@ -66,14 +66,22 @@ Ready-made architectures verified in production mod code. Prefer repeating one o
 
 ---
 
-## Entity GUIs: use `player.gui.relative`
+## GUI standards checklist
 
-**When:** any custom panel attached to an entity.
+**When:** any custom panel. Work through this list in order — every deviation from vanilla GUI conventions reads as jank to players.
 
-**Recipe:**
-- Anchor the panel with `player.gui.relative` beside the entity's own GUI — the title bar close button, E/Esc handling, and positioning all come free, and the default entity GUI stays visible (use it to show current contents).
-- Handle **both** `on_gui_opened` and `on_gui_closed`.
-- **Never** set `player.opened = nil` inside `on_gui_opened` to suppress the default GUI — it fires `on_gui_closed` immediately and corrupts your GUI state tracking.
+**1. Anchoring — enumerate your options first.**
+- Preferred: `player.gui.relative` anchored beside the entity's own GUI. Close button, E/Esc handling, and positioning come free, and the default entity GUI stays visible (use it to show current contents).
+- **Enumerate `defines.relative_gui_type` to find the owning window's anchor** — do not assume one exists. Not every entity GUI has a relative type (verified: storage-tank has none), and the engine-rendered native windows are not children of `player.gui.screen`, so their positions cannot be read or docked to.
+- Fallback when no anchor exists: a `player.gui.screen` panel (see 2–4 below).
+
+**2. Screen panels get vanilla chrome.** Title bar = a flow with `drag_target = frame`, a `frame_title`-style label, a stretchable `draggable_space_header` filler, and a `frame_action_button` close button using `utility/close` sprites. Optionally a `status_image` sprite in the title bar for live state (working/yellow/red).
+
+**3. Hotkey behavior must match vanilla.** Tie the panel's lifecycle to the owning entity's `on_gui_opened`/`on_gui_closed` so E and Esc close it with the entity GUI; the close button sets `player.opened = nil` rather than destroying the frame directly. Handle **both** open and close events — and **never** set `player.opened = nil` inside `on_gui_opened` to suppress a default GUI (it fires `on_gui_closed` immediately and corrupts your state tracking).
+
+**4. Position for every resolution.** Compute placement from `player.display_resolution` divided by `player.display_scale` — never hardcode pixels for one monitor. If a fixed position is unavoidable, expose the corner as a runtime-per-user mod setting so players can move it.
+
+**5. Update in place.** Store references to the mutable elements (bars, labels, status sprites) when building the panel and refresh values on tick; never rebuild the panel per refresh (flicker, focus loss).
 
 ---
 
