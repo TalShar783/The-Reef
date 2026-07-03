@@ -21,6 +21,7 @@ end)
 
 script.on_configuration_changed(function()
     cargo_hatch.on_configuration_changed()
+    pmr.on_configuration_changed()
 end)
 
 -- (No on_research_finished handler: cargo-hatch research effects are read
