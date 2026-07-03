@@ -14,7 +14,6 @@ end
 local function give_items(player)
     -- Reef items
     give(player, "cargo-hatch",                  10)
-    give(player, "advanced-cargo-hatch",         10)
     give(player, "basic-pmr",                     5)
     give(player, "fluid-pmr",                     5)
     give(player, "dilithium-reactor-1",           5)

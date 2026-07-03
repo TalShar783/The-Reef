@@ -112,55 +112,26 @@ scrap_deposit.order         = "z[scrap-deposit]"
 
 data:extend({ scrap_deposit })
 
--- Cargo Hatch (basic)
--- A 2×2 container that syncs with the platform cargo hub.
--- inventory_size = 1 enforces the single-stack buffer at the entity level.
--- surface_conditions: gravity = 0 restricts placement to space platforms only.
--- Placeholder graphics: iron chest. Replace with custom art before release.
+-- Cargo Hatch
+-- cargo-bay visual + hidden proxy-container (spawned by script) that exposes
+-- the platform hub's main inventory directly to inserters. Throughput is
+-- throttled by script (token bucket, research-scalable — see
+-- scripts/cargo-hatch.lua); placement count and hub distance are also
+-- research-gated. Placeholder graphics: steel chest. Replace before release.
 
-local hatch = table.deepcopy(data.raw["container"]["iron-chest"])
-hatch.name              = "cargo-hatch"
-hatch.icon              = "__base__/graphics/icons/iron-chest.png"
-hatch.icon_size         = 64
-hatch.inventory_size    = 1
--- Filterable slot + bar so the script can restrict what players may place
--- in the buffer (filtered to the configured item; barred shut when none).
-hatch.inventory_type    = "with_filters_and_bar"
-hatch.minable           = { mining_time = 0.5, result = "cargo-hatch" }
-hatch.collision_box     = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
-hatch.selection_box     = {{ -1,   -1   }, { 1,   1   }}
-hatch.dying_explosion   = nil   -- suppress poof on silent script-destroy
-hatch.corpse            = nil   -- suppress remnants on silent script-destroy
-hatch.surface_conditions = {
-    {
-        property = "gravity",
-        min      = 0,
-        max      = 0,
-    }
-}
-
-data:extend({ hatch })
-
--- Advanced Cargo Hatch
--- cargo-bay type: its inventory IS the platform hub inventory (shared pool).
--- allow_unloading = true lets inserters extract from it natively.
--- Inserters can also insert into it — items go straight into the hub.
--- No script needed; no GUI filter; no mode toggle.
--- Placeholder graphics: deepcopy vanilla cargo-bay. Replace before release.
-
-local adv_hatch = table.deepcopy(data.raw["cargo-bay"]["cargo-bay"])
-adv_hatch.name                 = "advanced-cargo-hatch"
-adv_hatch.icon                 = "__base__/graphics/icons/steel-chest.png"
-adv_hatch.icon_size            = 64
-adv_hatch.inventory_size_bonus = 20
-adv_hatch.minable              = { mining_time = 0.5, result = "advanced-cargo-hatch" }
-adv_hatch.collision_box        = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
-adv_hatch.selection_box        = {{ -1,   -1   }, { 1,   1   }}
-adv_hatch.surface_conditions   = {{ property = "gravity", min = 0, max = 0 }}
+local hatch = table.deepcopy(data.raw["cargo-bay"]["cargo-bay"])
+hatch.name                 = "cargo-hatch"
+hatch.icon                 = "__base__/graphics/icons/steel-chest.png"
+hatch.icon_size            = 64
+hatch.inventory_size_bonus = 20
+hatch.minable              = { mining_time = 0.5, result = "cargo-hatch" }
+hatch.collision_box        = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
+hatch.selection_box        = {{ -1,   -1   }, { 1,   1   }}
+hatch.surface_conditions   = {{ property = "gravity", min = 0, max = 0 }}
 
 -- Replace cargo-bay visuals with steel-chest placeholder.
 -- cargo-bay graphics_set reads `picture` (array of render-layer entries), not `animation`.
-adv_hatch.graphics_set = {
+hatch.graphics_set = {
     picture = {
         {
             render_layer = "object",
@@ -178,20 +149,20 @@ adv_hatch.graphics_set = {
         }
     }
 }
-adv_hatch.platform_graphics_set = nil
+hatch.platform_graphics_set = nil
 -- Remove the animated hatch-lid that the cargo-bay deepcopy inherits.
-adv_hatch.hatch_definitions = nil
+hatch.hatch_definitions = nil
 
-data:extend({ adv_hatch })
+data:extend({ hatch })
 
--- Proxy-container for advanced-cargo-hatch.
--- Invisible, zero-collision entity placed on top of the advanced hatch.
--- Script sets proxy_target_entity = hub so inserters/loaders read and write
--- the hub inventory transparently without any tick-based sync.
+-- Proxy-container for the cargo hatch.
+-- Invisible, zero-collision entity placed on top of the hatch. Script sets
+-- proxy_target_entity = hub so inserters read/write the hub inventory
+-- transparently; the throttle detaches the target during cooldown.
 data:extend({
     {
         type               = "proxy-container",
-        name               = "advanced-cargo-hatch-proxy",
+        name               = "cargo-hatch-proxy",
         collision_box      = {{ -0.9, -0.9 }, { 0.9, 0.9 }},
         selection_box      = {{ -1,   -1   }, { 1,   1   }},
         collision_mask     = { layers = {} },

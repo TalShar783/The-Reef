@@ -91,21 +91,11 @@ data:extend({
   {
     type         = "item",
     name         = "cargo-hatch",
-    icon         = "__base__/graphics/icons/iron-chest.png",
-    icon_size    = 64,
-    subgroup     = "the-reef-machines",
-    order        = "c[hatch]-a",
-    stack_size   = 50,
-    place_result = "cargo-hatch",
-  },
-  {
-    type         = "item",
-    name         = "advanced-cargo-hatch",
     icon         = "__base__/graphics/icons/steel-chest.png",
     icon_size    = 64,
     subgroup     = "the-reef-machines",
-    order        = "c[hatch]-b",
+    order        = "c[hatch]",
     stack_size   = 50,
-    place_result = "advanced-cargo-hatch",
+    place_result = "cargo-hatch",
   },
 })

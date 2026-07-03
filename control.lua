@@ -31,7 +31,6 @@ script.on_event(defines.events.on_research_finished, cargo_hatch.on_research_fin
 -- separately (a second call would silently replace the first handler).
 local managed_entity_filter = {
     { filter = "name", name = "cargo-hatch" },
-    { filter = "name", name = "advanced-cargo-hatch" },
     { filter = "name", name = "basic-pmr" },
     { filter = "name", name = "fluid-pmr" },
 }
@@ -80,19 +79,9 @@ script.on_event(defines.events.on_tick, function(event)
     pmr.on_tick(event)
     fluid_pmr.on_tick(event)
 end)
-script.on_event(defines.events.on_gui_opened, function(event)
-    cargo_hatch.on_gui_opened(event)
-    fluid_pmr.on_gui_opened(event)
-end)
-script.on_event(defines.events.on_gui_closed, function(event)
-    cargo_hatch.on_gui_closed(event)
-    fluid_pmr.on_gui_closed(event)
-end)
-script.on_event(defines.events.on_gui_click, function(event)
-    cargo_hatch.on_gui_click(event)
-    fluid_pmr.on_gui_click(event)
-end)
-script.on_event(defines.events.on_gui_elem_changed,    cargo_hatch.on_gui_elem_changed)
+script.on_event(defines.events.on_gui_opened, fluid_pmr.on_gui_opened)
+script.on_event(defines.events.on_gui_closed, fluid_pmr.on_gui_closed)
+script.on_event(defines.events.on_gui_click,  fluid_pmr.on_gui_click)
 
 -- Phase 5+: attractor and shield scripting
 -- require("scripts.attractor")

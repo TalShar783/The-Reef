@@ -1,28 +1,49 @@
 -- Cargo Hatch script.
 --
--- Handles both hatch types:
---   cargo-hatch          (basic)    — container with scripted tick-based hub sync and filter GUI
---   advanced-cargo-hatch (advanced) — cargo-bay type; inserter access via proxy-container that
---                                     forwards interactions directly to the hub inventory
+-- The hatch is a cargo-bay-lookalike entity plus a hidden proxy-container
+-- (cargo-hatch-proxy) on the same tiles that exposes the platform hub's main
+-- inventory directly to inserters — native engine passthrough, no per-item
+-- scripting and no configuration GUI.
+--
+-- Script enforces three research-scalable rules per force:
+--   * placement limit per platform (count)
+--   * max placement distance from the hub
+--   * throughput throttle — a token bucket refilled at R items/sec. A
+--     proxy-container is engine passthrough and fires no transfer events, so
+--     items moving through the hatch are counted by watching the hands of
+--     the inserters that target it. When the bucket runs dry, the proxy's
+--     target detaches (inserters stall harmlessly) and the hatch shows a red
+--     "On cooldown" status until the bucket refills. Whole swings always
+--     pass: the budget may go negative, which just lengthens the cooldown
+--     (a 12-item bulk swing on a 4/sec hatch costs 3 seconds of cooldown).
+--     Player hand-transfers through the GUI are deliberately not counted —
+--     the throttle governs automation, not the player. The final throughput
+--     research level removes the throttle entirely.
 
-local SYNC_INTERVAL   = 30
 local BASE_LIMIT      = 1
 local BASE_RANGE      = 20
 local RANGE_PER_LEVEL = 5
+
+local BASE_RATE            = 4    -- items/sec with no throughput research
+local RATE_PER_LEVEL       = 4    -- added per throughput research level
+local MAX_THROUGHPUT_LEVEL = 10   -- this level removes the throttle
+
+local THROTTLE_INTERVAL       = 5    -- ticks between throttle passes
+local INSERTER_RESCAN_TICKS   = 120  -- ticks between adjacent-inserter rescans
+local INSERTER_SCAN_RADIUS    = 4    -- tiles around the hatch center
 
 local M = {}
 
 -- ─── Storage ─────────────────────────────────────────────────────────────────
 
 function M.on_init()
-    storage.hatches                    = {}
-    storage.hatch_gui                  = {}
-    storage.cargo_hatch_extra_capacity = {}
-    storage.cargo_hatch_extra_range    = {}
-    storage.adv_hatch_proxies          = {}   -- unit_number -> proxy LuaEntity
+    storage.hatches                    = {}   -- unit_number -> hatch data
+    storage.cargo_hatch_extra_capacity = {}   -- force index -> extra hatches
+    storage.cargo_hatch_extra_range    = {}   -- force index -> extra tiles
+    storage.cargo_hatch_throughput     = {}   -- force index -> research level
 end
 
--- ─── Limit / range helpers ───────────────────────────────────────────────────
+-- ─── Research-scaled values ──────────────────────────────────────────────────
 
 local function get_limit(force)
     local extra = storage.cargo_hatch_extra_capacity
@@ -36,20 +57,23 @@ local function get_range(force)
     return BASE_RANGE + extra
 end
 
+-- Items/sec budget for the force, or nil when the throttle is researched away.
+local function get_rate(force)
+    local level = storage.cargo_hatch_throughput
+                  and storage.cargo_hatch_throughput[force.index] or 0
+    if level >= MAX_THROUGHPUT_LEVEL then return nil end
+    return BASE_RATE + RATE_PER_LEVEL * level
+end
+
+-- ─── Surface helpers ─────────────────────────────────────────────────────────
+
 local function get_platform_hatch_count(surface)
-    return #surface.find_entities_filtered({ name = { "cargo-hatch", "advanced-cargo-hatch" } })
+    return #surface.find_entities_filtered({ name = "cargo-hatch" })
 end
 
 local function get_hub(surface)
     local platform = surface.platform
     return platform and platform.hub or nil
-end
-
--- The platform's shared cargo inventory, held by the hub entity.
--- (LuaSpacePlatform has no cargo_inventory attribute in 2.x.)
-local function get_cargo_inventory(surface)
-    local hub = get_hub(surface)
-    return hub and hub.get_inventory(defines.inventory.hub_main) or nil
 end
 
 local function tile_distance(pos1, pos2)
@@ -58,79 +82,165 @@ local function tile_distance(pos1, pos2)
     return math.sqrt(dx * dx + dy * dy)
 end
 
--- ─── Buffer flush ────────────────────────────────────────────────────────────
+-- ─── Proxy ───────────────────────────────────────────────────────────────────
 
-local function flush_buffer(data)
-    if not data.entity.valid then return end
-    local inv = data.entity.get_inventory(defines.inventory.chest)
-    if not inv then return end
-    local cargo = get_cargo_inventory(data.entity.surface)
-    for i = 1, #inv do
-        local stack = inv[i]
-        if stack.valid_for_read then
-            local moved = cargo and cargo.insert(stack) or 0
-            if moved < stack.count then
-                -- Hub full (or missing) — spill the remainder at the hatch
-                -- instead of destroying it with the stack.clear() below.
-                data.entity.surface.spill_item_stack({
-                    position                      = data.entity.position,
-                    stack                         = {
-                        name    = stack.name,
-                        count   = stack.count - moved,
-                        quality = stack.quality.name,
-                    },
-                    enable_looted                 = false,
-                    allow_belts                   = false,
-                    use_start_position_on_failure = true,
-                })
-            end
-            stack.clear()
+local function spawn_proxy(entity)
+    local proxy = entity.surface.create_entity({
+        name     = "cargo-hatch-proxy",
+        force    = entity.force,
+        position = entity.position,
+    })
+    if not proxy then return nil end
+    proxy.destructible           = false
+    proxy.proxy_target_inventory = defines.inventory.hub_main
+    local hub = get_hub(entity.surface)
+    if hub then proxy.proxy_target_entity = hub end
+    return proxy
+end
+
+-- ─── Throttle ────────────────────────────────────────────────────────────────
+
+local STATUS_COOLDOWN = {
+    diode = defines.entity_status_diode.red,
+    label = { "cargo-hatch.on-cooldown" },
+}
+
+local function held_count(inserter)
+    local stack = inserter.held_stack
+    return stack.valid_for_read and stack.count or 0
+end
+
+-- Refreshes the set of inserters whose pickup or drop target is this hatch
+-- (targets resolve to whichever entity occupies the tile, so match both the
+-- hatch and its proxy). Existing entries keep their hand baseline.
+local function rescan_inserters(data, tick)
+    data.next_scan = tick + INSERTER_RESCAN_TICKS
+    local entity = data.entity
+    local pos = entity.position
+    local area = {
+        { pos.x - INSERTER_SCAN_RADIUS, pos.y - INSERTER_SCAN_RADIUS },
+        { pos.x + INSERTER_SCAN_RADIUS, pos.y + INSERTER_SCAN_RADIUS },
+    }
+    local tracked = {}
+    for _, ins in ipairs(entity.surface.find_entities_filtered({ area = area, type = "inserter" })) do
+        local drop = ins.drop_target
+        local pick = ins.pickup_target
+        if drop == entity or drop == data.proxy
+            or pick == entity or pick == data.proxy then
+            tracked[ins.unit_number] = data.inserters[ins.unit_number]
+                or { entity = ins, prev = held_count(ins) }
         end
+    end
+    data.inserters = tracked
+end
+
+-- Counts items that moved through the hatch since the last pass by diffing
+-- each tracked inserter's held stack: a decrease while dropping at the hatch
+-- is an insertion into the hub; an increase while picking from the hatch is
+-- an extraction. Hand changes on inserters interacting elsewhere don't touch
+-- the budget because their targets don't match.
+local function count_transfers(data)
+    local moved = 0
+    for uid, rec in pairs(data.inserters) do
+        local ins = rec.entity
+        if not ins.valid then
+            data.inserters[uid] = nil
+        else
+            local cur = held_count(ins)
+            if cur < rec.prev then
+                local drop = ins.drop_target
+                if drop == data.entity or drop == data.proxy then
+                    moved = moved + (rec.prev - cur)
+                end
+            elseif cur > rec.prev then
+                local pick = ins.pickup_target
+                if pick == data.entity or pick == data.proxy then
+                    moved = moved + (cur - rec.prev)
+                end
+            end
+            rec.prev = cur
+        end
+    end
+    return moved
+end
+
+local function detach(data)
+    data.detached = true
+    data.proxy.proxy_target_entity = nil
+    data.entity.custom_status = STATUS_COOLDOWN
+end
+
+local function attach(data)
+    data.detached = false
+    local hub = get_hub(data.entity.surface)
+    if hub then data.proxy.proxy_target_entity = hub end
+    data.entity.custom_status = nil
+    -- Re-baseline hands so movement during the cooldown (inserters swinging
+    -- to/from other targets) isn't attributed to the hatch.
+    for _, rec in pairs(data.inserters) do
+        if rec.entity.valid then rec.prev = held_count(rec.entity) end
     end
 end
 
--- ─── Buffer restriction ──────────────────────────────────────────────────────
--- The buffer is a single filtered slot: only the configured item (at normal
--- quality — sync is quality-blind, so non-normal items would sit in the
--- buffer forever) can be placed inside, and the slot is barred shut while no
--- item is configured. Direction can't be engine-enforced: in extract mode a
--- player may still deposit the configured item, which is indistinguishable
--- from (and as harmless as) not having taken it out.
+-- One throttle pass for one hatch. Returns false when the hatch is gone.
+local function throttle(data, tick)
+    local entity = data.entity
+    if not entity.valid then return false end
 
-local function apply_buffer_restriction(data)
-    if not data.entity.valid then return end
-    local inv = data.entity.get_inventory(defines.inventory.chest)
-    if not inv then return end
-    if data.item then
-        inv.set_bar()   -- reopen the slot
-        inv.set_filter(1, { name = data.item, quality = "normal", comparator = "=" })
-    else
-        inv.set_filter(1, nil)
-        inv.set_bar(1)  -- bar every slot: nothing can be placed inside
+    if not (data.proxy and data.proxy.valid) then
+        data.proxy = spawn_proxy(entity)   -- self-heal a lost proxy
+        if not data.proxy then return true end
+    end
+
+    local rate = get_rate(entity.force)
+    if not rate then
+        -- Throttle researched away: make sure the hatch is live and idle out.
+        if data.detached then attach(data) end
+        return true
+    end
+
+    if tick >= data.next_scan then rescan_inserters(data, tick) end
+
+    local bucket = rate   -- one second's worth of budget
+    data.budget = math.min(data.budget + rate * (THROTTLE_INTERVAL / 60), bucket)
+
+    if data.detached then
+        if data.budget >= bucket then attach(data) end
+        return true
+    end
+
+    data.budget = data.budget - count_transfers(data)
+    if data.budget <= 0 then detach(data) end
+    return true
+end
+
+function M.on_tick(event)
+    if event.tick % THROTTLE_INTERVAL ~= 0 then return end
+    for uid, data in pairs(storage.hatches) do
+        if not throttle(data, event.tick) then
+            if data.proxy and data.proxy.valid then data.proxy.destroy() end
+            storage.hatches[uid] = nil
+        end
     end
 end
 
 -- ─── Registration ────────────────────────────────────────────────────────────
 
 local function register(entity)
-    local data = {
-        entity = entity,
-        item   = nil,
-        mode   = "extract",
+    local rate = get_rate(entity.force)
+    storage.hatches[entity.unit_number] = {
+        entity    = entity,
+        proxy     = spawn_proxy(entity),
+        budget    = rate or 0,
+        detached  = false,
+        inserters = {},
+        next_scan = 0,
     }
-    storage.hatches[entity.unit_number] = data
-    apply_buffer_restriction(data)
 end
 
 local function unregister(entity)
-    for pid, uid in pairs(storage.hatch_gui) do
-        if uid == entity.unit_number then
-            local player = game.players[pid]
-            local frame  = player.gui.relative["cargo-hatch-config"]
-            if frame then frame.destroy() end
-            storage.hatch_gui[pid] = nil
-        end
-    end
+    local data = storage.hatches[entity.unit_number]
+    if data and data.proxy and data.proxy.valid then data.proxy.destroy() end
     storage.hatches[entity.unit_number] = nil
 end
 
@@ -139,10 +249,11 @@ end
 -- on_pre_build fires BEFORE the entity is created, giving us the chance to
 -- show the "can't build" sound and flying text exactly where the cursor is.
 function M.on_pre_build(event)
-    local player = game.players[event.player_index]
+    local player = game.get_player(event.player_index)
+    if not player then return end
     local cursor = player.cursor_stack
     if not (cursor and cursor.valid_for_read) then return end
-    if cursor.name ~= "cargo-hatch" and cursor.name ~= "advanced-cargo-hatch" then return end
+    if cursor.name ~= "cargo-hatch" then return end
 
     local surface = player.surface
     if not surface.platform then return end
@@ -178,61 +289,37 @@ end
 
 local function refund_hatch(event, surface, pos, item_name)
     if event.player_index then
-        game.players[event.player_index].insert({ name = item_name, count = 1 })
-    else
-        surface.spill_item_stack({
-            position                      = pos,
-            stack                         = { name = item_name, count = 1 },
-            enable_looted                 = false,
-            allow_belts                   = false,
-            use_start_position_on_failure = true,
-        })
+        local player = game.get_player(event.player_index)
+        if player then
+            player.insert({ name = item_name, count = 1 })
+            return
+        end
     end
-end
-
-local HATCH_NAMES = { ["cargo-hatch"] = true, ["advanced-cargo-hatch"] = true }
-
--- ─── Advanced hatch proxy ────────────────────────────────────────────────────
-
-local function spawn_adv_hatch_proxy(entity)
-    storage.adv_hatch_proxies = storage.adv_hatch_proxies or {}
-    local proxy = entity.surface.create_entity({
-        name     = "advanced-cargo-hatch-proxy",
-        force    = entity.force,
-        position = entity.position,
+    surface.spill_item_stack({
+        position                      = pos,
+        stack                         = { name = item_name, count = 1 },
+        enable_looted                 = false,
+        allow_belts                   = false,
+        use_start_position_on_failure = true,
     })
-    if not proxy then return end
-    proxy.destructible             = false
-    proxy.proxy_target_inventory   = defines.inventory.hub_main
-    local hub = get_hub(entity.surface)
-    if hub then proxy.proxy_target_entity = hub end
-    storage.adv_hatch_proxies[entity.unit_number] = proxy
-end
-
-local function destroy_adv_hatch_proxy(unit_number)
-    storage.adv_hatch_proxies = storage.adv_hatch_proxies or {}
-    local proxy = storage.adv_hatch_proxies[unit_number]
-    if proxy and proxy.valid then proxy.destroy() end
-    storage.adv_hatch_proxies[unit_number] = nil
 end
 
 -- ─── Build / remove ──────────────────────────────────────────────────────────
 
 function M.on_built(event)
     local entity = event.entity or event.created_entity
-    if not entity or not HATCH_NAMES[entity.name] then return end
+    if not entity or entity.name ~= "cargo-hatch" then return end
 
     local surface = entity.surface
     if surface.platform then
-        local pos  = entity.position
-        local item = entity.name
+        local pos = entity.position
 
         local hub = get_hub(surface)
         if hub then
             local range = get_range(entity.force)
             if tile_distance(pos, hub.position) > range then
                 entity.destroy({ raise_destroy = false })
-                refund_hatch(event, surface, pos, item)
+                refund_hatch(event, surface, pos, "cargo-hatch")
                 return
             end
         end
@@ -241,26 +328,18 @@ function M.on_built(event)
         local count = get_platform_hatch_count(surface)
         if count > limit then
             entity.destroy({ raise_destroy = false })
-            refund_hatch(event, surface, pos, item)
+            refund_hatch(event, surface, pos, "cargo-hatch")
             return
         end
     end
 
-    if entity.name == "advanced-cargo-hatch" then
-        spawn_adv_hatch_proxy(entity)
-    else
-        register(entity)
-    end
+    register(entity)
 end
 
 function M.on_removed(event)
     local entity = event.entity
-    if not entity or not HATCH_NAMES[entity.name] then return end
-    if entity.name == "advanced-cargo-hatch" then
-        destroy_adv_hatch_proxy(entity.unit_number)
-    else
-        unregister(entity)
-    end
+    if not entity or entity.name ~= "cargo-hatch" then return end
+    unregister(entity)
 end
 
 -- ─── Research handler ────────────────────────────────────────────────────────
@@ -274,184 +353,37 @@ function M.on_research_finished(event)
     elseif name == "the-reef-cargo-hatch-range" then
         storage.cargo_hatch_extra_range = storage.cargo_hatch_extra_range or {}
         storage.cargo_hatch_extra_range[fi] = (storage.cargo_hatch_extra_range[fi] or 0) + RANGE_PER_LEVEL
+    elseif name == "the-reef-cargo-hatch-throughput" then
+        storage.cargo_hatch_throughput = storage.cargo_hatch_throughput or {}
+        storage.cargo_hatch_throughput[fi] =
+            math.min((storage.cargo_hatch_throughput[fi] or 0) + 1, MAX_THROUGHPUT_LEVEL)
     end
-end
-
--- ─── Sync ────────────────────────────────────────────────────────────────────
-
-local function sync(data)
-    local hatch = data.entity
-    if not hatch.valid or not data.item then return end
-
-    local cargo = get_cargo_inventory(hatch.surface)
-    if not cargo then return end
-
-    local inv  = hatch.get_inventory(defines.inventory.chest)
-    local item = data.item
-
-    for i = 1, #inv do
-        local stack = inv[i]
-        if stack.valid_for_read and stack.name ~= item then
-            local moved = cargo.insert(stack)
-            stack.count = stack.count - moved
-        end
-    end
-
-    if data.mode == "extract" then
-        if inv.get_item_count(item) == 0 then
-            local available = cargo.get_item_count(item)
-            if available > 0 then
-                local stack_size = prototypes.item[item].stack_size
-                local n = cargo.remove({ name = item, count = math.min(stack_size, available) })
-                inv.insert({ name = item, count = n })
-            end
-        end
-    else
-        local count = inv.get_item_count(item)
-        if count > 0 then
-            local inserted = cargo.insert({ name = item, count = count })
-            inv.remove({ name = item, count = inserted })
-        end
-    end
-end
-
-function M.on_tick(event)
-    if event.tick % SYNC_INTERVAL ~= 0 then return end
-    for _, data in pairs(storage.hatches) do sync(data) end
-end
-
--- ─── GUI ─────────────────────────────────────────────────────────────────────
-
-local function build_gui(player, data)
-    local rel = player.gui.relative
-    if rel["cargo-hatch-config"] then rel["cargo-hatch-config"].destroy() end
-
-    local frame = rel.add({
-        type      = "frame",
-        name      = "cargo-hatch-config",
-        caption   = { "entity-name.cargo-hatch" },
-        direction = "vertical",
-        anchor    = {
-            gui      = defines.relative_gui_type.container_gui,
-            position = defines.relative_gui_position.right,
-        },
-    })
-
-    local surface = data.entity.surface
-    if surface.platform then
-        local limit = get_limit(data.entity.force)
-        local count = get_platform_hatch_count(surface)
-        local cap_row = frame.add({ type = "flow", direction = "horizontal" })
-        cap_row.add({
-            type    = "label",
-            caption = { "cargo-hatch-gui.capacity", count, limit },
-        })
-
-        local hub   = get_hub(surface)
-        local range = get_range(data.entity.force)
-        local dist  = hub and math.floor(tile_distance(data.entity.position, hub.position)) or 0
-        local rng_row = frame.add({ type = "flow", direction = "horizontal" })
-        rng_row.add({
-            type    = "label",
-            caption = { "cargo-hatch-gui.range", dist, range },
-        })
-    end
-
-    local row1 = frame.add({ type = "flow", direction = "horizontal" })
-    row1.style.vertical_align = "center"
-    row1.add({ type = "label", caption = { "cargo-hatch-gui.item-label" } })
-    row1.add({
-        type      = "choose-elem-button",
-        name      = "cargo-hatch-item-picker",
-        elem_type = "item",
-        item      = data.item or nil,
-    })
-
-    local row2 = frame.add({ type = "flow", direction = "horizontal" })
-    row2.style.vertical_align = "center"
-    row2.add({ type = "label", caption = { "cargo-hatch-gui.mode-label" } })
-    row2.add({
-        type    = "button",
-        name    = "cargo-hatch-mode-toggle",
-        caption = data.mode == "extract"
-                  and { "cargo-hatch-gui.mode-extract" }
-                  or  { "cargo-hatch-gui.mode-insert" },
-    })
-end
-
-function M.on_gui_opened(event)
-    if event.gui_type ~= defines.gui_type.entity then return end
-    local entity = event.entity
-    if not entity or entity.name ~= "cargo-hatch" then return end
-
-    local player = game.players[event.player_index]
-    local data   = storage.hatches[entity.unit_number]
-    if not data then return end
-
-    storage.hatch_gui[event.player_index] = entity.unit_number
-    build_gui(player, data)
-end
-
-function M.on_gui_closed(event)
-    if event.gui_type ~= defines.gui_type.entity then return end
-    local entity = event.entity
-    if not entity or entity.name ~= "cargo-hatch" then return end
-
-    local player = game.players[event.player_index]
-    local frame  = player.gui.relative["cargo-hatch-config"]
-    if frame then frame.destroy() end
-    storage.hatch_gui[event.player_index] = nil
-end
-
-function M.on_gui_click(event)
-    local el = event.element
-    if not el or not el.valid then return end
-
-    if el.name == "cargo-hatch-mode-toggle" then
-        local uid  = storage.hatch_gui[event.player_index]
-        local data = uid and storage.hatches[uid]
-        if not data then return end
-
-        flush_buffer(data)
-        data.mode  = data.mode == "extract" and "insert" or "extract"
-        el.caption = data.mode == "extract"
-                     and { "cargo-hatch-gui.mode-extract" }
-                     or  { "cargo-hatch-gui.mode-insert" }
-    end
-end
-
-function M.on_gui_elem_changed(event)
-    local el = event.element
-    if not el or not el.valid or el.name ~= "cargo-hatch-item-picker" then return end
-
-    local uid  = storage.hatch_gui[event.player_index]
-    local data = uid and storage.hatches[uid]
-    if not data then return end
-
-    flush_buffer(data)
-    data.item = el.elem_value
-    apply_buffer_restriction(data)
 end
 
 -- ─── Configuration changed ───────────────────────────────────────────────────
 
--- Re-applies buffer restrictions after mod updates — covers hatches placed
--- before the filter/bar behavior existed. Flushes first when the buffered
--- stack no longer conforms (wrong item, or non-normal quality), since a
--- filter can't be set on a slot holding a non-matching stack.
+-- Prunes hatch records whose entities did not survive a mod update (the old
+-- container-based basic hatch and the advanced hatch both died in the
+-- unification), drops the old design's storage tables, and self-heals
+-- proxies for surviving hatches.
 function M.on_configuration_changed()
+    storage.hatch_gui         = nil   -- old basic-hatch GUI tracking
+    storage.adv_hatch_proxies = nil   -- old advanced-hatch proxy registry
+    storage.cargo_hatch_throughput = storage.cargo_hatch_throughput or {}
     storage.hatches = storage.hatches or {}
-    for _, data in pairs(storage.hatches) do
-        if data.entity.valid then
-            local inv   = data.entity.get_inventory(defines.inventory.chest)
-            local stack = inv and inv[1]
-            if stack and stack.valid_for_read then
-                local conforms = data.item
-                    and stack.name == data.item
-                    and stack.quality.name == "normal"
-                if not conforms then flush_buffer(data) end
+
+    for uid, data in pairs(storage.hatches) do
+        if not (data.entity and data.entity.valid) then
+            if data.proxy and data.proxy.valid then data.proxy.destroy() end
+            storage.hatches[uid] = nil
+        else
+            if not (data.proxy and data.proxy.valid) then
+                data.proxy = spawn_proxy(data.entity)
             end
-            apply_buffer_restriction(data)
+            data.budget    = data.budget or (get_rate(data.entity.force) or 0)
+            data.detached  = data.detached or false
+            data.inserters = data.inserters or {}
+            data.next_scan = data.next_scan or 0
         end
     end
 end

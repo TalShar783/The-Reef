@@ -170,11 +170,11 @@ data:extend({
   {
     type     = "recipe",
     name     = "cargo-hatch",
-    icon     = "__base__/graphics/icons/iron-chest.png",
+    icon     = "__base__/graphics/icons/steel-chest.png",
     icon_size = 64,
     categories = { "crafting" },
     subgroup = "the-reef-machines",
-    order    = "z[hatch]-a",
+    order    = "z[hatch]",
     enabled  = false,
     energy_required = 5,
     ingredients = {
@@ -184,27 +184,6 @@ data:extend({
     },
     results = {
       { type = "item", name = "cargo-hatch", amount = 1 },
-    },
-  },
-
-  -- Advanced Cargo Hatch (building recipe) — upgrade of the basic hatch.
-  {
-    type     = "recipe",
-    name     = "advanced-cargo-hatch",
-    icon     = "__base__/graphics/icons/steel-chest.png",
-    icon_size = 64,
-    categories = { "crafting" },
-    subgroup = "the-reef-machines",
-    order    = "z[hatch]-b",
-    enabled  = false,
-    energy_required = 10,
-    ingredients = {
-      { type = "item", name = "cargo-hatch",            amount = 1  },
-      { type = "item", name = "steel-plate",            amount = 10 },
-      { type = "item", name = "advanced-circuit",       amount = 5  },
-    },
-    results = {
-      { type = "item", name = "advanced-cargo-hatch", amount = 1 },
     },
   },
 
