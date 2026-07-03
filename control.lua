@@ -19,6 +19,10 @@ script.on_init(function()
     storage.ithaca_center_patch_placed = false
 end)
 
+script.on_configuration_changed(function()
+    cargo_hatch.on_configuration_changed()
+end)
+
 script.on_event(defines.events.on_research_finished, cargo_hatch.on_research_finished)
 
 -- Register / unregister hatches + PMR on build and removal.

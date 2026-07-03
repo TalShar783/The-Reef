@@ -123,6 +123,9 @@ hatch.name              = "cargo-hatch"
 hatch.icon              = "__base__/graphics/icons/iron-chest.png"
 hatch.icon_size         = 64
 hatch.inventory_size    = 1
+-- Filterable slot + bar so the script can restrict what players may place
+-- in the buffer (filtered to the configured item; barred shut when none).
+hatch.inventory_type    = "with_filters_and_bar"
 hatch.minable           = { mining_time = 0.5, result = "cargo-hatch" }
 hatch.collision_box     = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
 hatch.selection_box     = {{ -1,   -1   }, { 1,   1   }}

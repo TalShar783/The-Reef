@@ -58,14 +58,68 @@ local function tile_distance(pos1, pos2)
     return math.sqrt(dx * dx + dy * dy)
 end
 
+-- ─── Buffer flush ────────────────────────────────────────────────────────────
+
+local function flush_buffer(data)
+    if not data.entity.valid then return end
+    local inv = data.entity.get_inventory(defines.inventory.chest)
+    if not inv then return end
+    local cargo = get_cargo_inventory(data.entity.surface)
+    for i = 1, #inv do
+        local stack = inv[i]
+        if stack.valid_for_read then
+            local moved = cargo and cargo.insert(stack) or 0
+            if moved < stack.count then
+                -- Hub full (or missing) — spill the remainder at the hatch
+                -- instead of destroying it with the stack.clear() below.
+                data.entity.surface.spill_item_stack({
+                    position                      = data.entity.position,
+                    stack                         = {
+                        name    = stack.name,
+                        count   = stack.count - moved,
+                        quality = stack.quality.name,
+                    },
+                    enable_looted                 = false,
+                    allow_belts                   = false,
+                    use_start_position_on_failure = true,
+                })
+            end
+            stack.clear()
+        end
+    end
+end
+
+-- ─── Buffer restriction ──────────────────────────────────────────────────────
+-- The buffer is a single filtered slot: only the configured item (at normal
+-- quality — sync is quality-blind, so non-normal items would sit in the
+-- buffer forever) can be placed inside, and the slot is barred shut while no
+-- item is configured. Direction can't be engine-enforced: in extract mode a
+-- player may still deposit the configured item, which is indistinguishable
+-- from (and as harmless as) not having taken it out.
+
+local function apply_buffer_restriction(data)
+    if not data.entity.valid then return end
+    local inv = data.entity.get_inventory(defines.inventory.chest)
+    if not inv then return end
+    if data.item then
+        inv.set_bar()   -- reopen the slot
+        inv.set_filter(1, { name = data.item, quality = "normal", comparator = "=" })
+    else
+        inv.set_filter(1, nil)
+        inv.set_bar(1)  -- bar every slot: nothing can be placed inside
+    end
+end
+
 -- ─── Registration ────────────────────────────────────────────────────────────
 
 local function register(entity)
-    storage.hatches[entity.unit_number] = {
+    local data = {
         entity = entity,
         item   = nil,
         mode   = "extract",
     }
+    storage.hatches[entity.unit_number] = data
+    apply_buffer_restriction(data)
 end
 
 local function unregister(entity)
@@ -223,37 +277,6 @@ function M.on_research_finished(event)
     end
 end
 
--- ─── Buffer flush ────────────────────────────────────────────────────────────
-
-local function flush_buffer(data)
-    if not data.entity.valid then return end
-    local inv = data.entity.get_inventory(defines.inventory.chest)
-    if not inv then return end
-    local cargo = get_cargo_inventory(data.entity.surface)
-    for i = 1, #inv do
-        local stack = inv[i]
-        if stack.valid_for_read then
-            local moved = cargo and cargo.insert(stack) or 0
-            if moved < stack.count then
-                -- Hub full (or missing) — spill the remainder at the hatch
-                -- instead of destroying it with the stack.clear() below.
-                data.entity.surface.spill_item_stack({
-                    position                      = data.entity.position,
-                    stack                         = {
-                        name    = stack.name,
-                        count   = stack.count - moved,
-                        quality = stack.quality.name,
-                    },
-                    enable_looted                 = false,
-                    allow_belts                   = false,
-                    use_start_position_on_failure = true,
-                })
-            end
-            stack.clear()
-        end
-    end
-end
-
 -- ─── Sync ────────────────────────────────────────────────────────────────────
 
 local function sync(data)
@@ -407,6 +430,30 @@ function M.on_gui_elem_changed(event)
 
     flush_buffer(data)
     data.item = el.elem_value
+    apply_buffer_restriction(data)
+end
+
+-- ─── Configuration changed ───────────────────────────────────────────────────
+
+-- Re-applies buffer restrictions after mod updates — covers hatches placed
+-- before the filter/bar behavior existed. Flushes first when the buffered
+-- stack no longer conforms (wrong item, or non-normal quality), since a
+-- filter can't be set on a slot holding a non-matching stack.
+function M.on_configuration_changed()
+    storage.hatches = storage.hatches or {}
+    for _, data in pairs(storage.hatches) do
+        if data.entity.valid then
+            local inv   = data.entity.get_inventory(defines.inventory.chest)
+            local stack = inv and inv[1]
+            if stack and stack.valid_for_read then
+                local conforms = data.item
+                    and stack.name == data.item
+                    and stack.quality.name == "normal"
+                if not conforms then flush_buffer(data) end
+            end
+            apply_buffer_restriction(data)
+        end
+    end
 end
 
 return M
