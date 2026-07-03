@@ -406,80 +406,73 @@ end
 
 -- ─── Item output ─────────────────────────────────────────────────────────────
 -- No loader entity — the sub-tanks are fluidboxes, not item inventories, so
--- there is no item stack for a loader to pull from. This mirrors the
--- deprecated Fluid PMR's own output approach (deprecated/fluid-pmr/fluid_pmr.lua):
--- check the east-adjacent tile for a belt, then a container, then bare
--- ground, and place the item directly via script.
+-- there is no item stack for a loader to pull from. Fallback chain on the
+-- east-adjacent tile: belt, then container, then bare ground. The target is
+-- resolved ONCE per output cycle and reused for every item moved that cycle
+-- (the previous per-item re-scan cost several find_entities_filtered calls
+-- per single item).
 
 local function output_pos(entity)
     local p = entity.position
     return { x = p.x + 2, y = p.y }
 end
 
--- find_entity("transport-belt", pos) only matches the base-tier belt by its
--- literal prototype name -- fast/express/turbo belts have different names
--- but all share type = "transport-belt", so matching by type catches every
--- tier. (Confirmed as the cause of items silently falling through to the
--- ground-spill fallback when a turbo-transport-belt was in place.)
-local function find_output_belt(surface, pos)
-    return surface.find_entities_filtered({ position = pos, type = "transport-belt" })[1]
-end
-
-local function can_output(surface, pos, item_name)
-    local belt = find_output_belt(surface, pos)
-    if belt then
-        local left  = belt.get_transport_line(defines.transport_line.left_line)
-        local right = belt.get_transport_line(defines.transport_line.right_line)
-        return left.can_insert_at_back() or right.can_insert_at_back()
-    end
+-- Belts are matched by type, never by prototype name — fast/express/turbo
+-- belts have different names but all share type = "transport-belt".
+-- (Name-matching was confirmed as the cause of items silently falling
+-- through to the ground-spill fallback when a turbo belt was in place.)
+local function resolve_output(surface, pos)
+    local belt = surface.find_entities_filtered({ position = pos, type = "transport-belt" })[1]
+    if belt then return { kind = "belt", belt = belt } end
 
     local area = { { pos.x - 0.5, pos.y - 0.5 }, { pos.x + 0.5, pos.y + 0.5 } }
     local containers = surface.find_entities_filtered({ area = area, type = { "container", "logistic-container" } })
-    if #containers > 0 then
-        for _, cont in ipairs(containers) do
-            local inv = cont.get_inventory(defines.inventory.chest)
-            if inv and inv.can_insert({ name = item_name, count = 1 }) then return true end
-        end
-        return false
-    end
+    if #containers > 0 then return { kind = "containers", containers = containers } end
 
-    local ground = surface.find_entities_filtered({ area = area, type = "item-entity" })
-    return #ground == 0
+    -- Bare ground: allow at most one spilled item per cycle (matching the
+    -- old behavior, where an existing item-entity blocked further output).
+    local clear = #surface.find_entities_filtered({ area = area, type = "item-entity" }) == 0
+    return { kind = "ground", clear = clear }
 end
 
-local function do_output(surface, pos, item_name)
-    local belt = find_output_belt(surface, pos)
-    if belt then
-        local left  = belt.get_transport_line(defines.transport_line.left_line)
-        local right = belt.get_transport_line(defines.transport_line.right_line)
+-- Moves one item to the resolved target. Returns false when the target is
+-- full/blocked, which ends the cycle for that stack.
+local function output_one(target, surface, pos, item_name)
+    if target.kind == "belt" then
+        if not target.belt.valid then return false end
+        local left  = target.belt.get_transport_line(defines.transport_line.left_line)
+        local right = target.belt.get_transport_line(defines.transport_line.right_line)
         if left.can_insert_at_back() then
             left.insert_at_back({ name = item_name, count = 1 })
+            return true
         elseif right.can_insert_at_back() then
             right.insert_at_back({ name = item_name, count = 1 })
+            return true
         end
-        return
-    end
-
-    local area = { { pos.x - 0.5, pos.y - 0.5 }, { pos.x + 0.5, pos.y + 0.5 } }
-    local containers = surface.find_entities_filtered({ area = area, type = { "container", "logistic-container" } })
-    if #containers > 0 then
-        for _, cont in ipairs(containers) do
-            local inv = cont.get_inventory(defines.inventory.chest)
-            if inv and inv.can_insert({ name = item_name, count = 1 }) then
-                inv.insert({ name = item_name, count = 1 })
-                return
+        return false
+    elseif target.kind == "containers" then
+        for _, cont in ipairs(target.containers) do
+            if cont.valid then
+                local inv = cont.get_inventory(defines.inventory.chest)
+                if inv and inv.can_insert({ name = item_name, count = 1 }) then
+                    inv.insert({ name = item_name, count = 1 })
+                    return true
+                end
             end
         end
-        return
+        return false
+    else
+        if not target.clear then return false end
+        surface.spill_item_stack({
+            position = pos,
+            stack = { name = item_name, count = 1 },
+            max_radius = 0,
+            use_start_position_on_failure = true,
+            allow_belts = false,
+        })
+        target.clear = false
+        return true
     end
-
-    surface.spill_item_stack({
-        position = pos,
-        stack = { name = item_name, count = 1 },
-        max_radius = 0,
-        use_start_position_on_failure = true,
-        allow_belts = false,
-    })
 end
 
 -- ─── Crafter feeding ─────────────────────────────────────────────────────────
@@ -554,12 +547,6 @@ local function feed_crafter(data, recipe, batches)
         crafter.set_recipe(recipe)
     end
 
-    -- TEMP DEBUG (remove once Fluid PMR crafting is confirmed working)
-    log(string.format(
-        "fluid-pmr %d: feeding crafter recipe '%s' x%d batches",
-        data.shell.unit_number, recipe.name, batches
-    ))
-
     for _, ingredient in pairs(recipe.ingredients) do
         local subtank = data.subtanks[ingredient.name]
         local fluid = subtank.get_fluid(1)
@@ -573,10 +560,10 @@ local function feed_crafter(data, recipe, batches)
     end
 end
 
--- ─── Item output ─────────────────────────────────────────────────────────────
+-- ─── Crafter output drain ────────────────────────────────────────────────────
 -- Pulls finished items out of the crafter's own output inventory (vanilla
 -- assembling-machine logic fills this automatically once fed) and places
--- them the same way the deprecated Fluid PMR did.
+-- them via the resolved output target above.
 
 local function drain_crafter_output(data)
     local crafter = data.crafter
@@ -587,17 +574,13 @@ local function drain_crafter_output(data)
 
     local pos = output_pos(data.shell)
     local surface = data.shell.surface
+    local target = resolve_output(surface, pos)
 
     for i = 1, #inventory do
         local stack = inventory[i]
-        while stack and stack.valid_for_read and stack.count > 0
-            and can_output(surface, pos, stack.name)
+        while stack.valid_for_read and stack.count > 0
+            and output_one(target, surface, pos, stack.name)
         do
-            -- TEMP DEBUG (remove once Fluid PMR crafting is confirmed working)
-            log(string.format(
-                "fluid-pmr %d: outputting 1x '%s' from crafter", data.shell.unit_number, stack.name
-            ))
-            do_output(surface, pos, stack.name)
             stack.count = stack.count - 1
         end
     end
