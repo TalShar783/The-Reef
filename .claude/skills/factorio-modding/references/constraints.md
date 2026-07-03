@@ -22,7 +22,7 @@ Hard facts about how the engine behaves, confirmed by loader/runtime errors, in-
 - **Deepcopies don't inherit later-stage edits.** Anything another mod (including Space Age itself) adds in *data-updates*/*data-final-fixes* is absent from a copy made in your `data.lua`. Notable case: `surface_conditions` on vanilla containers.
 - Hyphenated keys in Lua tables need bracket-string notation: `["day-night-cycle"] = 72000`, not `day-night-cycle = 72000`.
 - Container `inventory_type` variants (verified, prototype-api.json 2.1.8): `"normal"`, `"with_bar"` (default), `"with_filters_and_bar"`, `"with_custom_stack_size"`, `"with_weight_limit"`. Slot filters (`LuaInventory.set_filter(index, ItemFilter)`) require `with_filters_and_bar`; `ItemFilter` supports `{name, quality, comparator}`; `set_bar(1)` bars every slot. Enumerate these before scripting any inventory restriction.
-- `LuaEntity.custom_status` is writable (`{diode = defines.entity_status_diode.red/yellow/green, label = LocalisedString}`) — script-driven machine status without faking it via GUI.
+- `LuaEntity.custom_status` is writable (`{diode = defines.entity_status_diode.red/yellow/green, label = LocalisedString}`) and renders in the entity GUI's status row (verified in-game on a cargo-bay). `LuaEntity.status` still reports the *actual* engine status even while a custom_status is set — usable for state checks like `defines.entity_status.not_connected_to_hub_or_pad` (the cargo-bay broken-chain state).
 
 ## Recipes, items, subgroups
 

@@ -23,7 +23,9 @@ script.on_configuration_changed(function()
     cargo_hatch.on_configuration_changed()
 end)
 
-script.on_event(defines.events.on_research_finished, cargo_hatch.on_research_finished)
+-- (No on_research_finished handler: cargo-hatch research effects are read
+-- live from force.technologies[...].level, so script/editor research and
+-- un-research are respected without event bookkeeping.)
 
 -- Register / unregister hatches + PMR on build and removal.
 -- script.on_event only allows ONE handler per event, so cargo-hatch and PMR

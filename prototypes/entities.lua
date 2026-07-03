@@ -113,58 +113,45 @@ scrap_deposit.order         = "z[scrap-deposit]"
 data:extend({ scrap_deposit })
 
 -- Cargo Hatch
--- cargo-bay visual + hidden proxy-container (spawned by script) that exposes
--- the platform hub's main inventory directly to inserters. Throughput is
--- throttled by script (token bucket, research-scalable — see
--- scripts/cargo-hatch.lua); placement count and hub distance are also
--- research-gated. Placeholder graphics: steel chest. Replace before release.
+-- landing-pad-unloading-bay deepcopy (4×4 directional cargo-bay with
+-- extractor visuals and bay connection graphics) + hidden proxy-container
+-- (spawned by script) that exposes the platform hub's main inventory to
+-- inserters. Throughput is throttled by script (token bucket,
+-- research-scalable — see scripts/cargo-hatch.lua); placement count and hub
+-- distance are also research-gated, and the script keeps the proxy detached
+-- while the bay is not connected to the hub network.
+--
+-- allow_unloading = false is load-bearing: native unloading would let
+-- inserters pull from the hub directly, bypassing the throttled (and
+-- counted) proxy entirely.
 
-local hatch = table.deepcopy(data.raw["cargo-bay"]["cargo-bay"])
+local hatch = table.deepcopy(data.raw["cargo-bay"]["landing-pad-unloading-bay"])
 hatch.name                 = "cargo-hatch"
-hatch.icon                 = "__base__/graphics/icons/steel-chest.png"
+hatch.icon                 = "__space-age__/graphics/icons/cargo-unloading-bay.png"
 hatch.icon_size            = 64
-hatch.inventory_size_bonus = 20
 hatch.minable              = { mining_time = 0.5, result = "cargo-hatch" }
-hatch.collision_box        = {{ -0.9, -0.9 }, { 0.9, 0.9 }}
-hatch.selection_box        = {{ -1,   -1   }, { 1,   1   }}
+hatch.inventory_size_bonus = 0        -- must not extend the hub inventory
+hatch.allow_unloading      = false    -- all flow goes through the proxy
+hatch.use_unloading_distance_limit = false   -- planet landing-pad concept, n/a here
 hatch.surface_conditions   = {{ property = "gravity", min = 0, max = 0 }}
-
--- Replace cargo-bay visuals with steel-chest placeholder.
--- cargo-bay graphics_set reads `picture` (array of render-layer entries), not `animation`.
-hatch.graphics_set = {
-    picture = {
-        {
-            render_layer = "object",
-            layers = {
-                {
-                    filename    = "__base__/graphics/entity/steel-chest/steel-chest.png",
-                    priority    = "extra-high",
-                    width       = 64,
-                    height      = 80,
-                    shift       = util.by_pixel(-0.25, -0.5),
-                    scale       = 0.5,
-                    frame_count = 1,
-                }
-            }
-        }
-    }
-}
-hatch.platform_graphics_set = nil
--- Remove the animated hatch-lid that the cargo-bay deepcopy inherits.
-hatch.hatch_definitions = nil
+-- Platform-style bay connection sprites (the deepcopy ships planet ones).
+hatch.graphics_set.connections =
+    require("__space-age__.graphics.entity.cargo-hubs.connections.platform-connections")
 
 data:extend({ hatch })
 
 -- Proxy-container for the cargo hatch.
 -- Invisible, zero-collision entity placed on top of the hatch. Script sets
 -- proxy_target_entity = hub so inserters read/write the hub inventory
--- transparently; the throttle detaches the target during cooldown.
+-- transparently; the throttle (and the connection gate) detach the target
+-- to refuse traffic. Boxes cover the hatch's 4×4 core so inserters anywhere
+-- on the footprint resolve their target to the proxy.
 data:extend({
     {
         type               = "proxy-container",
         name               = "cargo-hatch-proxy",
-        collision_box      = {{ -0.9, -0.9 }, { 0.9, 0.9 }},
-        selection_box      = {{ -1,   -1   }, { 1,   1   }},
+        collision_box      = {{ -1.9, -1.9 }, { 1.9, 1.9 }},
+        selection_box      = {{ -2,   -2   }, { 2,   2   }},
         collision_mask     = { layers = {} },
         build_grid_size    = 2,
         flags              = { "player-creation", "not-on-map" },

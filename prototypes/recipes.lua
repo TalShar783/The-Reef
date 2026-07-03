@@ -170,7 +170,7 @@ data:extend({
   {
     type     = "recipe",
     name     = "cargo-hatch",
-    icon     = "__base__/graphics/icons/steel-chest.png",
+    icon     = "__space-age__/graphics/icons/cargo-unloading-bay.png",
     icon_size = 64,
     categories = { "crafting" },
     subgroup = "the-reef-machines",

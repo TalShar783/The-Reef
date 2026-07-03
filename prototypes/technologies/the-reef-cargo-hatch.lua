@@ -9,7 +9,7 @@ data:extend({
   {
     type      = "technology",
     name      = "the-reef-cargo-hatch",
-    icon      = "__base__/graphics/icons/steel-chest.png",
+    icon      = "__space-age__/graphics/icons/cargo-unloading-bay.png",
     icon_size = 64,
     prerequisites = { "the-reef-dilithium-science" },
     unit = {
@@ -31,12 +31,13 @@ data:extend({
 
   -- Repeatable upgrade: each level raises the hatch throughput budget by
   -- 4 items/sec (base 4/sec). Level 10 removes the throttle entirely.
-  -- Handled entirely by script (on_research_finished tracks the level).
+  -- Enforced by script, which reads the researched level live from
+  -- force.technologies (works with editor/script research changes).
   -- Cost doubles per level, standard infinite-research escalation.
   {
     type          = "technology",
     name          = "the-reef-cargo-hatch-throughput",
-    icon          = "__base__/graphics/icons/steel-chest.png",
+    icon          = "__space-age__/graphics/icons/cargo-unloading-bay.png",
     icon_size     = 64,
     upgrade       = true,
     max_level     = 10,
@@ -57,12 +58,12 @@ data:extend({
   },
 
   -- Repeatable upgrade: each level allows one additional Cargo Hatch per platform.
-  -- Handled entirely by script (on_research_finished increments the per-force limit).
+  -- Enforced by script at placement time (level read live from force.technologies).
   -- Cost scales with level: 250 * L packs per level.
   {
     type          = "technology",
     name          = "the-reef-cargo-hatch-capacity",
-    icon          = "__base__/graphics/icons/steel-chest.png",
+    icon          = "__space-age__/graphics/icons/cargo-unloading-bay.png",
     icon_size     = 64,
     upgrade       = true,
     max_level     = "infinite",
@@ -88,7 +89,7 @@ data:extend({
   {
     type          = "technology",
     name          = "the-reef-cargo-hatch-range",
-    icon          = "__base__/graphics/icons/steel-chest.png",
+    icon          = "__space-age__/graphics/icons/cargo-unloading-bay.png",
     icon_size     = 64,
     upgrade       = true,
     max_level     = "infinite",

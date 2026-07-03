@@ -96,6 +96,30 @@ Ready-made architectures verified in production mod code. Prefer repeating one o
 
 ---
 
+## Throttling engine passthrough (token bucket + inserter hand-watching)
+
+**When:** a rate limit on item flow through an entity whose movement is pure engine logic (proxy-container, native inventories) — there is no per-transfer event to hook.
+
+**Recipe:**
+- **Token bucket in script storage**: refill at R items/sec each pass, cap at ~1 second's worth. Each observed item subtracts. At ≤ 0, refuse traffic (for a proxy-container: `proxy_target_entity = nil` — inserters stall harmlessly holding their items) and set `custom_status` (red diode + label). Reattach when the bucket refills. Never interrupt a swing mid-flight: overshoot just drives the budget further negative, lengthening the cooldown proportionally.
+- **Counting**: watch the hands of the inserters targeting the entity. Rescan nearby inserters occasionally (~120 ticks) keeping those whose `pickup_target`/`drop_target` is the entity (or its proxy — targets resolve to whichever entity occupies the tile, match both). Each throttle pass (~5 ticks, well under one swing time), diff each hand's `held_stack` count: decrease while dropping at the entity = insertion; increase while picking from it = extraction. Re-baseline hands on reattach so unrelated movement during the cooldown isn't billed.
+- **Blind spots — document them where the throttle lives**: only inserters are counted. Player hand-transfers bypass the count (usually desirable — throttle automation, not the player); loaders/bots/anything else would too, so keep them unable to reach the proxy.
+- **Close the native bypass**: if the visible entity is a cargo-bay-family prototype, set `allow_unloading = false` (and `inventory_size_bonus = 0`) so the throttled proxy is the *only* item path — a connected bay with native unloading lets inserters pull from the hub uncounted.
+
+**Proven:** in-game verified — sustained feeds hit the cooldown, bulk swings pass whole with proportionally longer cooldowns, red status renders.
+
+---
+
+## Research-driven script values: read technology levels live
+
+**When:** any script behavior scales with research (limits, rates, ranges).
+
+**Recipe:** derive the value from `force.technologies["tech-name"]` at point of use — for upgrade techs the completed count is `tech.researched and tech.level or (tech.level - 1)`. Do **not** accumulate a counter in `on_research_finished`.
+
+**Why (verified in-game):** event counters miss every research change that doesn't fire the event normally — scenario scripts researching everything at init, editor un-research/re-research, `research_all_technologies()`. A counter-based rate sat at base level in an all-researched scenario and ignored editor changes entirely; live reads track all of them, including un-research.
+
+---
+
 ## Script storage as the source of truth
 
 **When:** tracking per-entity state, accumulated amounts, or compound-entity membership.

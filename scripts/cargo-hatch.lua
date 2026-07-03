@@ -1,24 +1,39 @@
 -- Cargo Hatch script.
 --
--- The hatch is a cargo-bay-lookalike entity plus a hidden proxy-container
--- (cargo-hatch-proxy) on the same tiles that exposes the platform hub's main
--- inventory directly to inserters — native engine passthrough, no per-item
--- scripting and no configuration GUI.
+-- The hatch is a landing-pad-unloading-bay lookalike (cargo-bay type) plus a
+-- hidden proxy-container (cargo-hatch-proxy) on the same tiles that exposes
+-- the platform hub's main inventory directly to inserters — native engine
+-- passthrough, no per-item scripting and no configuration GUI. The bay
+-- itself has allow_unloading = false and inventory_size_bonus = 0, so the
+-- proxy is the ONLY item path; connecting the bay to the hub network is a
+-- functional requirement (see connection gate below), not an item path.
 --
--- Script enforces three research-scalable rules per force:
+-- Script enforces, per force, all derived live from technology levels
+-- (force.technologies[...].level — never event counters, so script-researched
+-- and editor-modified levels are always respected):
 --   * placement limit per platform (count)
 --   * max placement distance from the hub
---   * throughput throttle — a token bucket refilled at R items/sec. A
---     proxy-container is engine passthrough and fires no transfer events, so
---     items moving through the hatch are counted by watching the hands of
---     the inserters that target it. When the bucket runs dry, the proxy's
---     target detaches (inserters stall harmlessly) and the hatch shows a red
---     "On cooldown" status until the bucket refills. Whole swings always
---     pass: the budget may go negative, which just lengthens the cooldown
---     (a 12-item bulk swing on a 4/sec hatch costs 3 seconds of cooldown).
---     Player hand-transfers through the GUI are deliberately not counted —
---     the throttle governs automation, not the player. The final throughput
---     research level removes the throttle entirely.
+--   * throughput throttle — a token bucket refilled at R items/sec. When
+--     the bucket runs dry, the proxy's target detaches (inserters stall
+--     harmlessly) and the hatch shows a red "On cooldown" status until the
+--     bucket refills. Whole swings always pass: the budget may go negative,
+--     which just lengthens the cooldown. The final throughput research
+--     level removes the throttle; passes then reduce to the connection
+--     check below.
+--
+-- COUNTING SCOPE — inserters only. A proxy-container is engine passthrough
+-- and fires no transfer events, so items are counted by watching the hands
+-- (held_stack) of the inserters whose pickup/drop target is the hatch or
+-- its proxy. Anything that is not an inserter is invisible to the throttle:
+-- player hand-transfers through the GUI are deliberately uncounted (the
+-- throttle governs automation, not the player), and if some future mover
+-- (loaders, bots, another mod's entity) gains access to the proxy it will
+-- bypass the count — revisit this section if that ever becomes possible.
+--
+-- CONNECTION GATE — the hatch only functions while its bay is connected to
+-- the hub network (entity.status ~= not_connected_to_hub_or_pad). While
+-- disconnected the proxy target is detached and no custom_status is set, so
+-- the engine's own broken-chain indicator stays visible.
 
 local BASE_LIMIT      = 1
 local BASE_RANGE      = 20
@@ -30,37 +45,41 @@ local MAX_THROUGHPUT_LEVEL = 10   -- this level removes the throttle
 
 local THROTTLE_INTERVAL       = 5    -- ticks between throttle passes
 local INSERTER_RESCAN_TICKS   = 120  -- ticks between adjacent-inserter rescans
-local INSERTER_SCAN_RADIUS    = 4    -- tiles around the hatch center
+local INSERTER_SCAN_RADIUS    = 5    -- tiles around the hatch center (4×4 body + reach)
+local WARN_COOLDOWN_TICKS     = 120  -- min ticks between placement warnings per player
 
 local M = {}
 
 -- ─── Storage ─────────────────────────────────────────────────────────────────
 
 function M.on_init()
-    storage.hatches                    = {}   -- unit_number -> hatch data
-    storage.cargo_hatch_extra_capacity = {}   -- force index -> extra hatches
-    storage.cargo_hatch_extra_range    = {}   -- force index -> extra tiles
-    storage.cargo_hatch_throughput     = {}   -- force index -> research level
+    storage.hatches    = {}   -- unit_number -> hatch data
+    storage.hatch_warn = {}   -- player_index -> tick of last placement warning
 end
 
--- ─── Research-scaled values ──────────────────────────────────────────────────
+-- ─── Research-scaled values (read live from technology levels) ───────────────
+
+-- Completed levels of an upgrade technology. For upgrade techs, .level is
+-- the next researchable level, so the completed count is level - 1 until
+-- the tech is fully researched.
+local function tech_level(force, name)
+    local tech = force.technologies[name]
+    if not tech then return 0 end
+    if tech.researched then return tech.level end
+    return tech.level - 1
+end
 
 local function get_limit(force)
-    local extra = storage.cargo_hatch_extra_capacity
-                  and storage.cargo_hatch_extra_capacity[force.index] or 0
-    return BASE_LIMIT + extra
+    return BASE_LIMIT + tech_level(force, "the-reef-cargo-hatch-capacity")
 end
 
 local function get_range(force)
-    local extra = storage.cargo_hatch_extra_range
-                  and storage.cargo_hatch_extra_range[force.index] or 0
-    return BASE_RANGE + extra
+    return BASE_RANGE + RANGE_PER_LEVEL * tech_level(force, "the-reef-cargo-hatch-range")
 end
 
 -- Items/sec budget for the force, or nil when the throttle is researched away.
 local function get_rate(force)
-    local level = storage.cargo_hatch_throughput
-                  and storage.cargo_hatch_throughput[force.index] or 0
+    local level = tech_level(force, "the-reef-cargo-hatch-throughput")
     if level >= MAX_THROUGHPUT_LEVEL then return nil end
     return BASE_RATE + RATE_PER_LEVEL * level
 end
@@ -192,9 +211,24 @@ local function throttle(data, tick)
         if not data.proxy then return true end
     end
 
+    -- Connection gate: an unconnected bay is inert. Leave custom_status
+    -- clear so the engine's own broken-chain status stays visible.
+    if entity.status == defines.entity_status.not_connected_to_hub_or_pad then
+        if not data.disconnected then
+            data.disconnected = true
+            data.proxy.proxy_target_entity = nil
+            entity.custom_status = nil
+        end
+        return true
+    elseif data.disconnected then
+        data.disconnected = false
+        if not data.detached then attach(data) end
+    end
+
     local rate = get_rate(entity.force)
     if not rate then
-        -- Throttle researched away: make sure the hatch is live and idle out.
+        -- Throttle researched away: make sure the hatch is live; the pass
+        -- reduces to the connection check above.
         if data.detached then attach(data) end
         return true
     end
@@ -229,12 +263,13 @@ end
 local function register(entity)
     local rate = get_rate(entity.force)
     storage.hatches[entity.unit_number] = {
-        entity    = entity,
-        proxy     = spawn_proxy(entity),
-        budget    = rate or 0,
-        detached  = false,
-        inserters = {},
-        next_scan = 0,
+        entity       = entity,
+        proxy        = spawn_proxy(entity),
+        budget       = rate or 0,
+        detached     = false,
+        disconnected = false,
+        inserters    = {},
+        next_scan    = 0,
     }
 end
 
@@ -246,8 +281,24 @@ end
 
 -- ─── Build validation ────────────────────────────────────────────────────────
 
+-- Shows the "can't build" sound + flying text, rate-limited per player so
+-- drag-building doesn't fire a warning on every tile the cursor crosses.
+local function warn(player, tick, position, text)
+    storage.hatch_warn = storage.hatch_warn or {}
+    local last = storage.hatch_warn[player.index]
+    if last and tick - last < WARN_COOLDOWN_TICKS then return end
+    storage.hatch_warn[player.index] = tick
+    player.play_sound({ path = "utility/cannot_build" })
+    player.create_local_flying_text({
+        position     = position,
+        text         = text,
+        color        = { r = 1, g = 0.5, b = 0.5 },
+        time_to_live = 120,
+    })
+end
+
 -- on_pre_build fires BEFORE the entity is created, giving us the chance to
--- show the "can't build" sound and flying text exactly where the cursor is.
+-- show the warning exactly where the cursor is.
 function M.on_pre_build(event)
     local player = game.get_player(event.player_index)
     if not player then return end
@@ -263,13 +314,8 @@ function M.on_pre_build(event)
         local range = get_range(player.force)
         local dist  = tile_distance(event.position, hub.position)
         if dist > range then
-            player.play_sound({ path = "utility/cannot_build" })
-            player.create_local_flying_text({
-                position     = event.position,
-                text         = { "cargo-hatch.range-exceeded", math.floor(dist), range },
-                color        = { r = 1, g = 0.5, b = 0.5 },
-                time_to_live = 120,
-            })
+            warn(player, event.tick, event.position,
+                { "cargo-hatch.range-exceeded", math.floor(dist), range })
             return
         end
     end
@@ -277,13 +323,8 @@ function M.on_pre_build(event)
     local limit = get_limit(player.force)
     local count = get_platform_hatch_count(surface)
     if count >= limit then
-        player.play_sound({ path = "utility/cannot_build" })
-        player.create_local_flying_text({
-            position     = event.position,
-            text         = { "cargo-hatch.limit-reached", count, limit },
-            color        = { r = 1, g = 0.5, b = 0.5 },
-            time_to_live = 120,
-        })
+        warn(player, event.tick, event.position,
+            { "cargo-hatch.limit-reached", count, limit })
     end
 end
 
@@ -342,35 +383,20 @@ function M.on_removed(event)
     unregister(entity)
 end
 
--- ─── Research handler ────────────────────────────────────────────────────────
-
-function M.on_research_finished(event)
-    local name = event.research.name
-    local fi   = event.research.force.index
-    if name == "the-reef-cargo-hatch-capacity" then
-        storage.cargo_hatch_extra_capacity = storage.cargo_hatch_extra_capacity or {}
-        storage.cargo_hatch_extra_capacity[fi] = (storage.cargo_hatch_extra_capacity[fi] or 0) + 1
-    elseif name == "the-reef-cargo-hatch-range" then
-        storage.cargo_hatch_extra_range = storage.cargo_hatch_extra_range or {}
-        storage.cargo_hatch_extra_range[fi] = (storage.cargo_hatch_extra_range[fi] or 0) + RANGE_PER_LEVEL
-    elseif name == "the-reef-cargo-hatch-throughput" then
-        storage.cargo_hatch_throughput = storage.cargo_hatch_throughput or {}
-        storage.cargo_hatch_throughput[fi] =
-            math.min((storage.cargo_hatch_throughput[fi] or 0) + 1, MAX_THROUGHPUT_LEVEL)
-    end
-end
-
 -- ─── Configuration changed ───────────────────────────────────────────────────
 
--- Prunes hatch records whose entities did not survive a mod update (the old
--- container-based basic hatch and the advanced hatch both died in the
--- unification), drops the old design's storage tables, and self-heals
--- proxies for surviving hatches.
+-- Prunes hatch records whose entities did not survive a mod update, drops
+-- storage tables from retired designs (research is now read live from
+-- technology levels, so the old event-counter tables are dead), and
+-- self-heals proxies for surviving hatches.
 function M.on_configuration_changed()
-    storage.hatch_gui         = nil   -- old basic-hatch GUI tracking
-    storage.adv_hatch_proxies = nil   -- old advanced-hatch proxy registry
-    storage.cargo_hatch_throughput = storage.cargo_hatch_throughput or {}
-    storage.hatches = storage.hatches or {}
+    storage.hatch_gui                  = nil   -- container-hatch GUI tracking
+    storage.adv_hatch_proxies          = nil   -- pre-unification proxy registry
+    storage.cargo_hatch_extra_capacity = nil   -- research event counters,
+    storage.cargo_hatch_extra_range    = nil   -- replaced by live tech-level
+    storage.cargo_hatch_throughput     = nil   -- reads
+    storage.hatch_warn = storage.hatch_warn or {}
+    storage.hatches    = storage.hatches or {}
 
     for uid, data in pairs(storage.hatches) do
         if not (data.entity and data.entity.valid) then
@@ -380,10 +406,11 @@ function M.on_configuration_changed()
             if not (data.proxy and data.proxy.valid) then
                 data.proxy = spawn_proxy(data.entity)
             end
-            data.budget    = data.budget or (get_rate(data.entity.force) or 0)
-            data.detached  = data.detached or false
-            data.inserters = data.inserters or {}
-            data.next_scan = data.next_scan or 0
+            data.budget       = data.budget or 0
+            data.detached     = data.detached or false
+            data.disconnected = data.disconnected or false
+            data.inserters    = data.inserters or {}
+            data.next_scan    = data.next_scan or 0
         end
     end
 end

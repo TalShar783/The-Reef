@@ -91,7 +91,7 @@ data:extend({
   {
     type         = "item",
     name         = "cargo-hatch",
-    icon         = "__base__/graphics/icons/steel-chest.png",
+    icon         = "__space-age__/graphics/icons/cargo-unloading-bay.png",
     icon_size    = 64,
     subgroup     = "the-reef-machines",
     order        = "c[hatch]",
