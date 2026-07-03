@@ -41,8 +41,15 @@ local function get_platform_hatch_count(surface)
 end
 
 local function get_hub(surface)
-    local hubs = surface.find_entities_filtered({ type = "space-platform-hub" })
-    return hubs[1]
+    local platform = surface.platform
+    return platform and platform.hub or nil
+end
+
+-- The platform's shared cargo inventory, held by the hub entity.
+-- (LuaSpacePlatform has no cargo_inventory attribute in 2.x.)
+local function get_cargo_inventory(surface)
+    local hub = get_hub(surface)
+    return hub and hub.get_inventory(defines.inventory.hub_main) or nil
 end
 
 local function tile_distance(pos1, pos2)
@@ -214,17 +221,6 @@ function M.on_research_finished(event)
         storage.cargo_hatch_extra_range = storage.cargo_hatch_extra_range or {}
         storage.cargo_hatch_extra_range[fi] = (storage.cargo_hatch_extra_range[fi] or 0) + RANGE_PER_LEVEL
     end
-end
-
--- ─── Platform cargo inventory ────────────────────────────────────────────────
-
-local function get_cargo_inventory(surface)
-    -- LuaSpacePlatform.cargo_inventory doesn't exist in Factorio 2.x;
-    -- accessing a missing key on a C++ Factorio object throws rather than
-    -- returning nil. Use the hub entity's inventory directly instead.
-    local hubs = surface.find_entities_filtered({ type = "space-platform-hub" })
-    if hubs[1] then return hubs[1].get_inventory(1) end
-    return nil
 end
 
 -- ─── Buffer flush ────────────────────────────────────────────────────────────
