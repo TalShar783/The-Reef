@@ -46,8 +46,7 @@ end
 
 local M = {}
 
-local DRAIN_INTERVAL   = 30  -- ticks between drain attempts; tune once profiled
-local PRODUCE_INTERVAL = 30  -- ticks between item-output attempts
+local TICK_INTERVAL = 30  -- drain + produce + GUI refresh cadence; tune once profiled
 
 -- ─── Storage ─────────────────────────────────────────────────────────────────
 
@@ -171,7 +170,7 @@ local CLOSE_BUTTON_NAME = "fluid_pmr_close_button"
 -- (green while the intake gate is open/empty, red while a batch is staged
 -- and draining), and a close button — matches the chrome every native
 -- machine GUI has.
--- Returns the status sprite element so M.on_tick can update it live.
+-- Returns the status sprite element so M.on_nth_tick can update it live.
 local function add_titlebar(frame, gate_open)
     local titlebar = frame.add({ type = "flow" })
     titlebar.drag_target = frame
@@ -214,7 +213,7 @@ end
 -- One fluid bar per supported fluid: icon, progressbar tinted to the
 -- fluid's own color, and an amount/capacity label — same information a
 -- vanilla fluid gauge shows. Returns { [fluid_name] = { bar = .., label = .. } }
--- so M.on_tick can update values in place without rebuilding the GUI.
+-- so M.on_nth_tick can update values in place without rebuilding the GUI.
 local function add_fluid_bars(frame, data)
     local content = frame.add({ type = "frame", style = "inside_shallow_frame_with_padding", direction = "vertical" })
     local bars = {}
@@ -284,7 +283,7 @@ local function panel_location(player, frame)
 end
 
 -- Returns { frame = .., status = .., bars = .. } — status and bars are the
--- live-updatable element refs used by M.on_tick's refresh loop.
+-- live-updatable element refs used by M.on_nth_tick's refresh loop.
 local function build_subtank_gui(player, data, gate_open)
     local frame = player.gui.screen.add({
         type      = "frame",
@@ -625,20 +624,18 @@ local function refresh_open_guis()
     end
 end
 
-function M.on_tick(event)
+-- Registered via script.on_nth_tick(M.TICK_INTERVAL, ...) in control.lua.
+function M.on_nth_tick(event)
     storage.fluid_pmrs = storage.fluid_pmrs or {}
-    local do_drain   = (event.tick % DRAIN_INTERVAL   == 0)
-    local do_produce = (event.tick % PRODUCE_INTERVAL == 0)
-    if not do_drain and not do_produce then return end
 
     for uid, data in pairs(storage.fluid_pmrs) do
-        local ok = true
-        if do_drain   then ok = pump_to_shell(data) and drain(data) end
-        if ok and do_produce then ok = produce(data) end
+        local ok = pump_to_shell(data) and drain(data)
+        if ok then ok = produce(data) end
         if not ok then storage.fluid_pmrs[uid] = nil end
     end
 
-    if do_drain then refresh_open_guis() end
+    refresh_open_guis()
 end
+M.TICK_INTERVAL = TICK_INTERVAL
 
 return M

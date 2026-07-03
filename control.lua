@@ -75,13 +75,13 @@ script.on_event(defines.events.on_space_platform_mined_entity, dispatch_removed,
 script.on_event(defines.events.on_entity_died,                 dispatch_removed, managed_entity_filter)
 script.on_event(defines.events.script_raised_destroy,          dispatch_removed, managed_entity_filter)
 
--- Sync and GUI
--- on_tick only accepts one handler; both modules share a combined dispatcher.
-script.on_event(defines.events.on_tick, function(event)
-    cargo_hatch.on_tick(event)
-    pmr.on_tick(event)
-    fluid_pmr.on_tick(event)
-end)
+-- Periodic work runs on per-module cadences via on_nth_tick — the engine
+-- schedules the calls, replacing an every-tick dispatcher of modulo checks.
+-- NOTE: on_nth_tick allows only ONE handler per interval value; if two
+-- modules ever share an interval, they must share a dispatcher for it.
+script.on_nth_tick(cargo_hatch.TICK_INTERVAL, cargo_hatch.on_nth_tick)  -- 5
+script.on_nth_tick(pmr.TICK_INTERVAL,         pmr.on_nth_tick)          -- 6
+script.on_nth_tick(fluid_pmr.TICK_INTERVAL,   fluid_pmr.on_nth_tick)    -- 30
 script.on_event(defines.events.on_gui_opened, fluid_pmr.on_gui_opened)
 script.on_event(defines.events.on_gui_closed, fluid_pmr.on_gui_closed)
 script.on_event(defines.events.on_gui_click,  fluid_pmr.on_gui_click)

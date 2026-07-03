@@ -141,8 +141,8 @@ local function sync(rec, tick)
     return true
 end
 
-function M.on_tick(event)
-    if event.tick % SYNC_INTERVAL ~= 0 then return end
+-- Registered via script.on_nth_tick(M.TICK_INTERVAL, ...) in control.lua.
+function M.on_nth_tick(event)
     storage.pmrs = storage.pmrs or {}
     for uid, rec in pairs(storage.pmrs) do
         if not sync(rec, event.tick) then
@@ -150,5 +150,6 @@ function M.on_tick(event)
         end
     end
 end
+M.TICK_INTERVAL = SYNC_INTERVAL
 
 return M

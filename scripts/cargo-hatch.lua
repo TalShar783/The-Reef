@@ -249,8 +249,8 @@ local function throttle(data, tick)
     return true
 end
 
-function M.on_tick(event)
-    if event.tick % THROTTLE_INTERVAL ~= 0 then return end
+-- Registered via script.on_nth_tick(M.TICK_INTERVAL, ...) in control.lua.
+function M.on_nth_tick(event)
     for uid, data in pairs(storage.hatches) do
         if not throttle(data, event.tick) then
             if data.proxy and data.proxy.valid then data.proxy.destroy() end
@@ -258,6 +258,7 @@ function M.on_tick(event)
         end
     end
 end
+M.TICK_INTERVAL = THROTTLE_INTERVAL
 
 -- ─── Registration ────────────────────────────────────────────────────────────
 
