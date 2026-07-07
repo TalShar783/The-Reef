@@ -27,3 +27,9 @@ Date: 2026-06-27
     - Phase 4: dilithium-reactor-1 technology (costs dilithium science packs)
     - Phase 4: Cargo Hatch entity, item, recipe, technology
     - Phase 4: cargo-hatch.lua — 1-stack Option B sync, configuration GUI
+    - Charybdis space-location, Ithaca -> Charybdis connection, discovery technology
+    - charybdis-gravity.lua — scripted depth-scaled gravity well: weak thrust
+      operates freely near Ithaca but stalls and is dragged in past a
+      depth-dependent point of no return; consumed platforms are destroyed
+      and anyone aboard is evacuated to Nauvis. Ported from the gravity-well-test
+      prototype mod after in-game verification.

@@ -12,16 +12,22 @@ local pmr = require("scripts.pmr")
 -- Fluid PMR
 local fluid_pmr = require("scripts.fluid-pmr")
 
+-- Charybdis gravity well (on_tick self-registers inside the module; only
+-- on_init/on_configuration_changed need dispatching from here)
+local charybdis_gravity = require("scripts.charybdis-gravity")
+
 script.on_init(function()
     cargo_hatch.on_init()
     pmr.on_init()
     fluid_pmr.on_init()
+    charybdis_gravity.on_init()
     storage.ithaca_center_patch_placed = false
 end)
 
 script.on_configuration_changed(function()
     cargo_hatch.on_configuration_changed()
     pmr.on_configuration_changed()
+    charybdis_gravity.on_configuration_changed()
 end)
 
 -- (No on_research_finished handler: cargo-hatch research effects are read

@@ -22,6 +22,10 @@ require("prototypes.entities")
 require("prototypes.ithaca")
 require("prototypes.technologies.the-reef-basic-pmr")
 
+-- Charybdis: the gravity well beyond Ithaca (space-location, connection,
+-- discovery tech all bundled in one file, matching prototypes/ithaca.lua)
+require("prototypes.charybdis")
+
 -- Phase 4: Dilithium Science Pack + Reactor T1 + Cargo Hatch
 require("prototypes.technologies.the-reef-dilithium-science")
 require("prototypes.technologies.the-reef-dilithium-reactor")
