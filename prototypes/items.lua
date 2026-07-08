@@ -55,6 +55,25 @@ data:extend({
     durability = 1,
     durability_description_key = "description.science-pack-remaining-amount-key",
   },
+  {
+    type      = "item",
+    name      = "dilithium-crystal-matrix",
+    icon      = "__the-reef__/graphics/icons/dilithium-crystal-matrix.png",
+    icon_size = 64,
+    subgroup  = "the-reef-materials",
+    order     = "f[matrix]",
+    stack_size = 1,
+  },
+
+    {
+    type      = "item",
+    name      = "strange-matter-container",
+    icon      = "__the-reef__/graphics/icons/strange-matter-container.png",
+    icon_size = 64,
+    subgroup  = "the-reef-materials",
+    order     = "g[smcontainer]",
+    stack_size = 20,
+  },
 
   -- ── Machines (the-reef-machines row) ────────────────────────────────────
 
