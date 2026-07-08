@@ -1,13 +1,14 @@
 local asteroid_util = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")
 local inner_reef_route = {
   probability_on_range_small = {
-  {position = 0.0,   probability = 0.025, angle_when_stopped = asteroid_util.small_angle},
+  {position = 0.001,   probability = 0.025, angle_when_stopped = asteroid_util.small_angle},
   {position = 0.199, probability = 0.05, angle_when_stopped = asteroid_util.small_angle},
   {position = 0.2,   probability = 0.075,             angle_when_stopped = asteroid_util.small_angle},
 },
   type_ratios = {
     -- Metallic, Carbonic, Oxide, Prometheum, in that order.
-    {position = 0.0, ratios ={3, 3, 3, 0}}
+    {position = 0.001, ratios ={3, 3, 3, 0}},
+    {position = 0.2, ratios ={4, 5, 6, 0}}
   }
 
 }
@@ -35,7 +36,7 @@ data:extend({
         asteroid = "starship-scrap-chunk",
         type     = "asteroid-chunk",
         spawn_points = {
-          { distance = 0.1, probability = 0.000, speed = asteroid_util.standard_speed, angle_when_stopped = 1 },
+          { distance = 0.1, probability = 0.001, speed = asteroid_util.standard_speed, angle_when_stopped = 1 },
           { distance = 0.6, probability = 0.010, speed = asteroid_util.standard_speed, angle_when_stopped = 1 },
           { distance = 1.0, probability = 0.050, speed = asteroid_util.standard_speed, angle_when_stopped = 1 },
         },
