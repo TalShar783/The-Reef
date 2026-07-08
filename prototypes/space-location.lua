@@ -39,5 +39,29 @@ PlanetsLib:extend({
       })
       return spawns
     end)(),
+  },
+  {
+    type                    = "space-location",
+    name                    = "the-inner-reef",
+    icon                    = "__space-age__/graphics/icons/shattered-planet.png",
+    icon_size               = 64,
+    starmap_icon            = "__space-age__/graphics/icons/shattered-planet.png",
+    starmap_icon_size       = 64,
+    order                   = "e[the-reef]-b[inner]",
+    orbit = {
+      parent      = { type = "space-location", name = "the-reef" },
+      distance    = 2,
+      orientation = 0.65,
+    },
+    draw_orbit              = false,
+    -- fly_condition mimics the Shattered Planet's ability for wait conditions to be evalutated
+    -- without landing on the location. auto_save is turned off because you will probably not reach it 
+    -- and don't want to auto-save every time you go in.
+    fly_condition           = true,
+    auto_save_on_first_trip = false,
+    magnitude               = 0.4,
+    solar_power_in_space    = 40,
+    label_orientation       = 0.75,
+    asteroid_spawn_influence = 1,
   }
 })
