@@ -64,16 +64,15 @@ data:extend({
     order     = "f[matrix]",
     stack_size = 1,
   },
-
-    {
-    type      = "item",
-    name      = "strange-matter-container",
-    icon      = "__the-reef__/graphics/icons/strange-matter-container.png",
-    icon_size = 64,
-    subgroup  = "the-reef-materials",
-    order     = "g[smcontainer]",
-    stack_size = 20,
-  },
+  {
+  type      = "item",
+  name      = "strange-matter-container",
+  icon      = "__the-reef__/graphics/icons/strange-matter-container.png",
+  icon_size = 64,
+  subgroup  = "the-reef-materials",
+  order     = "g[smcontainer]",
+  stack_size = 20,
+},
 
   -- ── Machines (the-reef-machines row) ────────────────────────────────────
 
