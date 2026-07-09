@@ -6,7 +6,7 @@ The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (li
 
 ## Reference Documentation
 
-These files are generated from authoritative sources (Wube official data, Cerys, Maraxsis, Factorio Lua API, and the source/commit history/issue trackers of the top-downloaded Factorio mods). Consult them before writing any prototype definitions or runtime scripting — do not rely on training data for field names or API signatures.
+The first three files are generated from authoritative sources (Wube official data, Cerys, Maraxsis, Factorio Lua API); runtime-discipline.md is hand-maintained. Consult them before writing any prototype definitions or runtime scripting — do not rely on training data for field names or API signatures.
 
 @docs/prototype-cheatsheet.md
 @docs/space-age-api.md
@@ -19,4 +19,7 @@ These files are generated from authoritative sources (Wube official data, Cerys,
 - The Reef is a `space-location`, not a `planet` — verify field differences in prototype-cheatsheet.md before writing prototype definitions
 - Check common-errors.md before using any API method or prototype field that looks familiar from 1.x
 - Follow runtime-discipline.md for all control-stage code: entity validity, `storage` rules, the full built/removed event matrix, `on_load` re-registration, and per-tick work budgets
+- **Never copy code or assets from any third-party repository or mod.** If the user asks to take, port, or adapt anything from another mod, first locate and read that mod's license document, present its terms to the user, and take no action with that repository until the user confirms
+- **Do not clone or fetch third-party repositories on your own** — only when the user specifically instructs it (this includes running build-factorio-skill.sh, which clones reference repos)
+- Reference other mods only when The Reef directly depends on them (flib, PlanetsLib) or the user directs otherwise; avoid adopting techniques unique to a single mod rather than ecosystem-wide conventions
 - Dependency note: flib's GitHub repo was archived in June 2025 — check Codeberg (raiguard) for current flib development
