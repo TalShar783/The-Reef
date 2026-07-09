@@ -6,15 +6,17 @@ The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (li
 
 ## Factorio Modding Skill
 
-All general Factorio 2.x knowledge lives in `.claude/skills/factorio-modding/` — read `SKILL.md` before writing any mod code, and its `references/` on demand:
+All general Factorio 2.x knowledge lives in the global skill at `~/.claude/skills/factorio-modding/` (no local copy in this repo — the two had drifted and the local copy was removed 2026-07-09) — read `SKILL.md` before writing any mod code, and its `references/` on demand:
 
 - `patterns.md` — read **before designing any new machine or mechanic**
 - `breaking-changes-2x.md` — check **first** when a familiar-looking field/method errors
-- `constraints.md`, `space-platforms.md` — verified engine facts by domain
+- `constraints.md`, `space-platforms.md`, `lifecycle-and-determinism.md` — verified engine facts by domain
 - `prototype-index.md` — scan before choosing a prototype type for any new entity
 - `graveyard.md` — known-dead approaches; check before anything clever with fluid boxes or entity visibility
 
-When a new Factorio-specific error is diagnosed, file the finding per SKILL.md § Maintaining this skill, **in the same commit as the fix**. Keep the skill project-agnostic — Reef-specific state belongs here or in HANDOFF.md.
+FMTK's generated local API stub library (see SKILL.md § Development environment) is the preferred source for field names/types/signatures when available — check there before the skill's cached API JSONs.
+
+When a new Factorio-specific error is diagnosed, file the finding per SKILL.md § Maintaining this skill, **in the same commit as the fix**, into the global skill (not this repo). Keep the skill project-agnostic — Reef-specific state belongs here or in HANDOFF.md.
 
 ## Local Source Material (for the skill's verification workflow)
 
