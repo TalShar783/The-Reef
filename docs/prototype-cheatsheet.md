@@ -1,18 +1,28 @@
-API Error: Response stalled mid-stream. The response above may be incomplete.
-ace-location
+# Prototype Cheatsheet — The Reef (Factorio 2.x / Space Age)
 
-**Type string:** `"space-location"` — **uncertain from source.** The provided source shows `type = "planet"` for Cerys and Maraxsis. Maraxsis requires a `prototypes/planet/space-location` file but its contents are not in the source material. `"space-location"` is likely correct for non-landable destinations (per prompt context) but cannot be confirmed from source examples.
+Quick-lookup reference for the prototype types The Reef uses. Derived from Wube's
+official base + Space Age data and the Factorio prototype API, plus facts confirmed
+directly during The Reef's own load testing. Where a field is marked **unverified**,
+check lua-api.factorio.com or `data.raw` before relying on it.
 
-**Via PlanetsLib** (used by Cerys; recommended for compat):
+---
+
+## space-location
+
+**Type string:** `"space-location"` — confirmed working during The Reef Phase 1 load
+(non-landable destinations like Shattered Planet use this type; landable planets use
+`type = "planet"`).
+
+**Via PlanetsLib** (a Reef dependency; recommended for cross-mod compatibility):
 ```lua
 PlanetsLib:extend({ { ... } })
 ```
 
-**Fields observed in Cerys / Maraxsis source:**
+**Fields:**
 
 | Field | Type | Notes |
 |---|---|---|
-| `type` | string | `"space-location"` — **unverified** |
+| `type` | string | `"space-location"` |
 | `name` | string | Unique prototype name |
 | `icon` | string | Asset path |
 | `icon_size` | uint | Pixels |
@@ -21,50 +31,56 @@ PlanetsLib:extend({ { ... } })
 | `order` | string | Sort string |
 | `distance` | float | **Inside `orbit` only** — PlanetsLib rejects top-level |
 | `orientation` | float | **Inside `orbit` only** — PlanetsLib rejects top-level |
-| `draw_orbit` | bool | `false` in both mods |
-| `magnitude` | float | Starmap visual size; `0.5` in Cerys |
+| `draw_orbit` | bool | Draw the orbit ring on the starmap |
+| `magnitude` | float | Starmap visual size (vanilla planets ≈ 1.0) |
 | `solar_power_in_space` | float | Platform solar power in orbit |
 | `label_orientation` | float | Label angle around orbit ring |
 | `pollutant_type` | string/nil | `nil` disables pollution |
-| `asteroid_spawn_influence` | float | Multiplier; `1` in Cerys |
+| `asteroid_spawn_influence` | float | Multiplier on asteroid spawns |
 | `asteroid_spawn_definitions` | table | See §asteroid-spawn-definitions |
-| `surface_properties` | table | See below — **planet-only?** uncertain for space-location |
-| `hidden` | bool | Hides from starmap; used for Maraxsis trench |
-| `orbit` | table | Parent/satellite relationship (Cerys satellite pattern) |
+| `surface_properties` | table | See below — relevance to non-landable locations **unverified** |
+| `hidden` | bool | Hides the location from the starmap |
+| `orbit` | table | Parent/satellite relationship — **required by PlanetsLib** (see common-errors.md) |
 
-**`surface_properties` keys from Cerys source** (whether applicable to non-landable space-locations is uncertain):
+**`surface_properties` keys** (illustrative values — set your own; whether these apply
+to non-landable space-locations is **unverified**):
 ```lua
 surface_properties = {
   ["day-night-cycle"] = 72000,   -- ticks
   ["magnetic-field"]  = 120,
   ["solar-power"]     = 120,
   pressure            = 5,
-  gravity             = 0.15,    -- Cerys note: 0.1 is minimum for chests
+  gravity             = 0.15,    -- reportedly 0.1 is the minimum for chests; verify
   temperature         = 251,
 }
 ```
 
-> **2.x change:** `surface_properties`, `asteroid_spawn_definitions`, `asteroid_spawn_influence`, `solar_power_in_space` are all Space Age additions. None exist in 1.x planet prototypes.
+> **2.x change:** `surface_properties`, `asteroid_spawn_definitions`,
+> `asteroid_spawn_influence`, `solar_power_in_space` are all Space Age additions. None
+> exist in 1.x planet prototypes.
 
-**Minimal working example (non-landable, adapted from Cerys pattern):**
+**Minimal working example (non-landable):**
 ```lua
 local asteroid_util = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")
 
 PlanetsLib:extend({
   {
-    type = "space-location",          -- verify this type string
+    type = "space-location",
     name = "the-reef",
     icon = "__the-reef__/graphics/icons/the-reef.png",
     icon_size = 256,
     starmap_icon = "__the-reef__/graphics/icons/starmap-the-reef.png",
     starmap_icon_size = 500,
-    distance = 12,
-    orientation = 0.55,
     order = "e[the-reef]",
     draw_orbit = true,
     magnitude = 0.4,
     solar_power_in_space = 100,
-    asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo),
+    asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo, 0.9),
+    orbit = {
+      parent = { type = "space-location", name = "star" },
+      distance = 12,
+      orientation = 0.55,
+    },
   }
 })
 ```
@@ -73,20 +89,20 @@ PlanetsLib:extend({
 
 ## space-connection
 
-**Type string:** `"space-connection"` — confirmed from both Cerys and Maraxsis source.
+**Type string:** `"space-connection"`
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `type` | string | yes | `"space-connection"` |
 | `name` | string | yes | |
-| `subgroup` | string | yes | `"planet-connections"` in both mods |
+| `subgroup` | string | yes | `"planet-connections"` (see common-errors.md) |
 | `from` | string | yes | Planet/location name |
 | `to` | string | yes | Planet/location name |
 | `order` | string | yes | |
-| `length` | uint | yes | Route length; `800` (Cerys), `20000` (Maraxsis) |
+| `length` | uint | yes | Route length — compare vanilla routes in `data.raw["space-connection"]` for scale |
 | `asteroid_spawn_definitions` | table | yes | Route spawns (no second arg = full route) |
 
-**Minimal example (from Cerys source):**
+**Minimal example:**
 ```lua
 data:extend({
   {
@@ -106,7 +122,10 @@ data:extend({
 
 ## asteroid (spawn definitions and naming)
 
-> **Source note:** The `asteroid-spawn-definitions.lua` source is comprehensive. It defines how asteroids are *spawned*, not the entity prototype itself. The entity prototype fields for `type = "asteroid"` or `type = "asteroid-chunk"` are **not in the source material** — only their names and spawn structures are shown.
+> **Source note:** Wube's `asteroid-spawn-definitions.lua` defines how asteroids are
+> *spawned*, not the entity prototype itself. For the entity prototype fields of
+> `type = "asteroid"` / `type = "asteroid-chunk"`, consult
+> `__space-age__/prototypes/entity/` directly.
 
 **Source:** `__space-age__/prototypes/planet/asteroid-spawn-definitions.lua`
 
@@ -132,7 +151,7 @@ Available routes: `nauvis_vulcanus`, `nauvis_gleba`, `nauvis_fulgora`, `vulcanus
 }
 ```
 
-### Entity naming convention (from source)
+### Entity naming convention (from Wube source)
 
 | Size | Name pattern | Example |
 |---|---|---|
@@ -173,12 +192,13 @@ Planet/location-specific (second arg to `spawn_definitions()`):
 }
 ```
 
-### Usage patterns (from source)
+### Usage patterns (from Wube source)
 ```lua
 -- Full route (use on space-connection):
 asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo)
 
--- At a specific location (position 0–1 along route, use on planet/space-location):
+-- At a specific location (position 0–1 along route, use on planet/space-location);
+-- the position must be one of the route's significant positions — see common-errors.md:
 asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo, 0.9)
 ```
 
@@ -188,60 +208,55 @@ asteroid_util.spawn_definitions(asteroid_util.fulgora_aquilo, 0.9)
 
 ## item
 
-**Type string:** `"item"` — referenced in source only within minable result tables:
+**Type string:** `"item"` — appears in Wube source within minable result tables:
 ```lua
 { type = "item", name = "stone", amount_min = 11, amount_max = 15 }
 ```
 
-> **Source limitation:** No complete `type = "item"` prototype definition appears in the provided source material. The table below lists only what the source confirms; remaining field names and requirements are **unverified from source**.
-
-| Field | Source status |
-|---|---|
-| `type = "item"` | Confirmed (minable results pattern) |
-| `name` | Confirmed (minable results pattern) |
-| `icon`, `icon_size` | **Unverified** — not shown in source |
-| `stack_size` | **Unverified** — not shown in source |
-| `subgroup`, `order` | **Unverified** — not shown in source |
-
-**Do not use this section as authoritative.** Cross-reference against base game item prototypes directly.
+> **Verification note:** Full `item` prototype field requirements were not captured in
+> the gathered source material. Cross-reference against base game item prototypes
+> (`data.raw.item`) directly for `icon`/`icon_size`, `stack_size`, `subgroup`, `order`,
+> and weight/spoilage fields new in 2.x.
 
 ---
 
 ## recipe
 
-**Type string:** `"recipe"` — referenced by file structure only (`require("prototypes.recipe.recipe")` in Cerys; `require "prototypes.recipe.nuclear"` etc. in Cerys).
-
-> **Source limitation:** No `type = "recipe"` prototype definition body appears in the source material. Field names cannot be confirmed.
+> **Verification note:** No `recipe` prototype definition body was captured in the
+> gathered source material. Check base game recipes in `data.raw.recipe` — note the 2.x
+> format change: `ingredients`/`results` entries are `{type=, name=, amount=}` records
+> (no shorthand pairs), and `result`/`result_count` were removed in favor of `results`.
 
 ---
 
 ## technology
 
-**Type string:** `"technology"` — referenced by file structure only (`require("prototypes.technology")` in Cerys; multiple technology files in Maraxsis).
-
-> **Source limitation:** No `type = "technology"` prototype definition body appears in the source material. Field names cannot be confirmed.
+> **Verification note:** No `technology` prototype definition body was captured in the
+> gathered source material. Check base game technologies in `data.raw.technology`. For
+> unlocking The Reef, see common-errors.md: discovery prerequisites follow the
+> `planet-discovery-<name>` pattern and the unlock effect field is `space_location`.
 
 ---
 
 ## generator (Dilithium Generator)
 
-**Type string:** `"generator"` — **uncertain.** Maraxsis references `require "prototypes.entity.oversized-steam-turbine"` and `require "prototypes.entity.salt-reactor"` but neither file's contents appear in the source material.
-
-> **Source limitation:** No generator prototype definition appears in the source material. Type string and all field names are **unverified from source.**
+> **Verification note:** Type string and field names unverified from gathered source.
+> Check `__base__/prototypes/entity/` generator/burner-generator definitions and the
+> prototype API before writing this definition.
 
 ---
 
 ## thruster (Ion Thruster)
 
-**Type string:** `"thruster"` — **uncertain.** No thruster prototype or reference to one appears anywhere in the provided source material.
-
-> **Source limitation:** Type string and all field names are **unverified from source.**
+> **Verification note:** Type string and field names unverified from gathered source.
+> Check `__space-age__/prototypes/entity/thruster.lua` and the prototype API before
+> writing this definition.
 
 ---
 
 ## container / inventory scripting hooks
 
-Based on the runtime API event list in source. Event handler registration uses `script.on_event(defines.events.<name>, handler)`.
+Event handler registration uses `script.on_event(defines.events.<name>, handler)`.
 
 ### Entity lifecycle (for tracking containers)
 
@@ -256,6 +271,7 @@ Based on the runtime API event list in source. Event handler registration uses `
 | `on_space_platform_mined_entity` | `entity, buffer: LuaInventory, platform` | `buffer` valid this tick only |
 
 > **2.x change:** `on_space_platform_built_entity` and `on_space_platform_mined_entity` are new in Space Age.
+> This table is the minimum for container work — see the full built/removed matrix in runtime-discipline.md §3.
 
 ### GUI / inventory interaction
 
@@ -282,7 +298,7 @@ Based on the runtime API event list in source. Event handler registration uses `
 | `on_research_finished` | `research: LuaTechnology, by_script: bool` | Unlock recipes/content |
 | `on_research_reversed` | `research: LuaTechnology, by_script: bool` | Undo unlocks |
 
-### Script registration pattern (from Cerys/Maraxsis control.lua structure)
+### Script registration pattern (standard form)
 ```lua
 -- control.lua
 script.on_event(defines.events.on_built_entity, function(event)

@@ -1,8 +1,8 @@
-```markdown
 # Common API Errors: Factorio 2.x / Space Age Mod Development
 
-Errors documented from Wube official data, Cerys, and Maraxsis source material, plus
-confirmed Factorio 2.x engine behaviors (verify specifics against
+Errors documented from Wube official data, the requirements of The Reef's direct
+dependencies (flib, PlanetsLib), errors hit directly during The Reef's own load testing,
+and confirmed Factorio 2.x engine behaviors (verify specifics against
 lua-api.factorio.com). All code snippets are original illustrations — nothing is copied
 from third-party mods. Do not speculate beyond what the source confirms.
 
@@ -12,8 +12,8 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `local asteroid_functions = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")`
 **Correct:** `local asteroid_util = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")`
-**Source:** Cerys `prototypes/planet/planet.lua`, Maraxsis planet prototype
-**Note:** The module internally names its table `asteroid_functions`, but every reference mod requires it under the alias `asteroid_util`; using the internal name as the variable name is technically valid Lua but diverges from the established convention and will break copy-pasted examples.
+**Source:** Wube `asteroid-spawn-definitions.lua` (the module's internal table name) vs the ecosystem-wide require alias
+**Note:** The module internally names its table `asteroid_functions`, but the established convention is to require it under the alias `asteroid_util`; using the internal name is technically valid Lua but diverges from convention and will break copy-pasted examples.
 
 ---
 
@@ -21,7 +21,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.gleba_fulgora)`
 **Correct:** `asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.gleba_fulgora, 0.9)`
-**Source:** Cerys `prototypes/planet/planet.lua` (planet prototype vs space-connection)
+**Source:** Wube `asteroid-spawn-definitions.lua` (`spawn_definitions` second parameter)
 **Note:** The second argument is the route position (0–1 float) representing where along the route this body sits; omitting it produces route-wide spawn tables (correct for `space-connection`) but wrong for a `planet`/`space-location` prototype's own `asteroid_spawn_definitions`.
 
 ---
@@ -30,7 +30,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `data:extend({ { type = "planet", name = "the-reef", ... } })`
 **Correct:** `PlanetsLib:extend({ { type = "planet", name = "the-reef", ... } })`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Source:** PlanetsLib usage requirements (PlanetsLib is a Reef dependency)
 **Note:** PlanetsLib is declared as a hard dependency and wraps `data:extend` with additional registration logic; bypassing it causes the location to be invisible to PlanetsLib-aware mods.
 
 ---
@@ -39,16 +39,16 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `autoplace_settings = { ["tiles"] = { ... } }`
 **Correct:** `autoplace_settings = { ["tile"] = { ... } }`
-**Source:** Cerys `prototypes/planet/map-gen-settings.lua`, Maraxsis `map-gen.lua`
+**Source:** Factorio `MapGenSettings.autoplace_settings` schema — verify at lua-api.factorio.com
 **Note:** The key is the singular `"tile"`, matching the prototype category name; `"tiles"` silently produces no tile placement.
 
 ---
 
 ### Misspelling `procession_graphic_catalogue`
 
-**Wrong:** `procession_graphics_catalogue = planet_catalogue_cerys`
-**Correct:** `procession_graphic_catalogue = planet_catalogue_cerys`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Wrong:** `procession_graphics_catalogue = my_planet_catalogue`
+**Correct:** `procession_graphic_catalogue = my_planet_catalogue`
+**Source:** Factorio prototype field spelling — verify at lua-api.factorio.com
 **Note:** The field name uses the singular `graphic` with no trailing `s`; the plural spelling is silently ignored.
 
 ---
@@ -66,7 +66,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `surface_properties = { day-night-cycle = 3600, magnetic-field = 120 }`
 **Correct:** `surface_properties = { ["day-night-cycle"] = 3600, ["magnetic-field"] = 120 }`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Source:** Lua syntax — hyphenated keys require bracket string notation
 **Note:** Hyphenated keys are not valid Lua identifiers and must use bracket string notation; non-hyphenated properties like `gravity`, `pressure`, and `temperature` can use either form.
 
 ---
@@ -75,16 +75,16 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `subgroup = "space-connections"`
 **Correct:** `subgroup = "planet-connections"`
-**Source:** Cerys `prototypes/planet/planet.lua`, Maraxsis planet prototype
-**Note:** Every space-connection in the source uses `"planet-connections"` as the subgroup string; other values will break ordering in the starmap GUI.
+**Source:** Vanilla space-connection prototypes (`data.raw["space-connection"]`)
+**Note:** Vanilla space-connections use `"planet-connections"` as the subgroup string; other values will break ordering in the starmap GUI.
 
 ---
 
 ### Placing `is_satellite = true` at the top level instead of inside `orbit`
 
-**Wrong:** `{ type = "planet", name = "cerys", is_satellite = true, orbit = { ... } }`
-**Correct:** `{ type = "planet", name = "cerys", orbit = { ..., is_satellite = true } }`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Wrong:** `{ type = "planet", name = "my-moon", is_satellite = true, orbit = { ... } }`
+**Correct:** `{ type = "planet", name = "my-moon", orbit = { ..., is_satellite = true } }`
+**Source:** PlanetsLib orbit schema (verify against PlanetsLib source — a Reef dependency)
 **Note:** `is_satellite` is a field of the `orbit` sub-table, not of the planet prototype itself.
 
 ---
@@ -93,7 +93,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `orbit = { parent = "fulgora", distance = 1.39 }`
 **Correct:** `orbit = { parent = { type = "planet", name = "fulgora" }, distance = 1.39 }`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Source:** PlanetsLib orbit schema (verify against PlanetsLib source — a Reef dependency)
 **Note:** `parent` is a table with both `type` and `name` keys, not a bare string.
 
 ---
@@ -111,7 +111,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `PlanetsLib.extend({ ... })`
 **Correct:** `PlanetsLib:extend({ ... })`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Source:** PlanetsLib API — colon-call passes the required implicit `self`
 **Note:** The colon syntax passes the PlanetsLib object as the implicit `self` argument; dot notation omits it, causing a runtime error inside the library method.
 
 ---
@@ -246,11 +246,10 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 The following identifiers appear in the source material but their full signatures or constraints could not be confirmed from the provided excerpts alone. Verify against lua-api.factorio.com or the PlanetsLib source before use:
 
-- `asteroid_spawn_influence` — appears as `asteroid_spawn_influence = 1` on the Cerys planet prototype; unclear whether it is required, what the valid range is, or whether it applies to `space-location` type prototypes at all.
-- `treat_missing_as_default` inside `autoplace_settings` sub-tables — used as `false` in Cerys map gen; exact semantics (and whether `true` is the silent default) not confirmed from the provided data.
-- `surface_render_parameters.shadow_opacity` — appears in Cerys (`shadow_opacity = 0.6`); full list of accepted sub-fields not shown in the source.
-- `persistent_ambient_sounds` — set to `{}` in Cerys; schema of the non-empty form not shown.
-- `pollutant_type = nil` vs `pollutant_type = "nil"` (string) — Cerys uses actual `nil`; Maraxsis uses the string `"nil"`. Which form the engine accepts for "no pollutant" is not confirmed from the provided source.
-- `auto_save_on_first_trip` — appears as `false` on the Maraxsis trench planet; whether this is a standard planet prototype field or Maraxsis-specific is not confirmed.
-- `label_orientation` — appears on both Cerys and Maraxsis trench prototypes; valid range and effect not described in the provided source.
-```
+- `asteroid_spawn_influence` — seen in the wild as `asteroid_spawn_influence = 1` on planet prototypes; unclear whether it is required, what the valid range is, or whether it applies to `space-location` type prototypes at all.
+- `treat_missing_as_default` inside `autoplace_settings` sub-tables — seen set to `false` in the wild; exact semantics (and whether `true` is the silent default) not confirmed.
+- `surface_render_parameters.shadow_opacity` — seen as `0.6` in the wild; full list of accepted sub-fields not confirmed.
+- `persistent_ambient_sounds` — seen set to `{}` in the wild; schema of the non-empty form not confirmed.
+- `pollutant_type = nil` vs `pollutant_type = "nil"` (string) — both forms are seen in the wild; which form the engine accepts for "no pollutant" is not confirmed.
+- `auto_save_on_first_trip` — seen as `false` in the wild on planet prototypes; whether it is a standard engine field or mod-specific is not confirmed.
+- `label_orientation` — seen in the wild on planet/space-location prototypes; valid range and effect not confirmed.

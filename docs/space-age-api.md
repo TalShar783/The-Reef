@@ -1,4 +1,3 @@
-```markdown
 # Space Age Runtime API Reference — The Reef Mod
 
 Generated from provided source material only. Gaps where the source does not contain the relevant information are called out explicitly rather than filled from training data.
@@ -148,13 +147,13 @@ Returns `asteroid_spawn_definitions` — an array suitable for assigning to a `s
 - `asteroid_util.aquilo_solar_system_edge`
 - `asteroid_util.shattered_planet_trip` (includes `has_promethium_asteroids = true`)
 
-**Cerys usage example:**
+**Usage on a planet/space-location prototype (fixed orbital position):**
 ```lua
 asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.gleba_fulgora, 0.9)
 -- planet = 0.9 returns a flat list for a fixed orbital position
 ```
 
-**Maraxsis space-connection usage:**
+**Usage on a space-connection (full route):**
 ```lua
 asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.gleba_aquilo)
 -- planet = nil returns full route curves
@@ -179,9 +178,12 @@ The mechanism visible in the source for surface-to-platform item movement is the
 | `on_cargo_pod_finished_descending` | `cargo_pod: LuaEntity`, `launched_by_rocket: boolean`, `player_index: uint32` | Pod lands on a surface, at a station or on the ground. |
 | `on_cargo_pod_delivered_cargo` | `cargo_pod: LuaEntity`, `spawned_container: LuaEntity` | Fired after the pod has delivered its cargo. |
 
-### Cerys and Maraxsis implementation patterns
+### Script-driven transfer patterns
 
-The Cerys control.lua requires `scripts/teleporter` and Maraxsis requires `scripts/trench-duct`, both of which handle inter-surface item movement. **However, the implementation code for these scripts is not included in the provided source material.** Only the `require` declarations are shown. Do not infer API patterns from their names alone.
+**No script-driven inter-surface transfer implementation is documented here.** The cargo
+pod events above are the engine-level mechanism visible in the source. For anything
+beyond them (teleporter-style transfers), design from the Factorio runtime API docs
+directly.
 
 ---
 
@@ -227,9 +229,7 @@ Called when an entity is damaged. **Not called when an entity's health is set di
 
 The source notes: *"It is fired once every tick. Since this event is fired every tick, its handler shouldn't include performance heavy code."*
 
-### Patterns visible in the reference mods
-
-**Neither Cerys nor Maraxsis show their `on_tick` handler implementations in the provided source.** Their `control.lua` files only show top-level `require` declarations for sub-scripts (e.g., `scripts.atmosphere`, `scripts.cooling`, `scripts.lighting` for Cerys; `scripts.submarine`, `scripts.pressure-dome` for Maraxsis). No actual `script.on_event(defines.events.on_tick, ...)` bodies appear in the provided material.
+### Patterns
 
 The only pattern that can be stated from source is the standard registration form used by all Factorio mods:
 
@@ -239,5 +239,5 @@ script.on_event(defines.events.on_tick, function(event)
 end)
 ```
 
-Specific throttling patterns (e.g., `event.tick % N == 0`), per-platform polling loops, or staged update queues used by Cerys or Maraxsis are **not shown in the provided source material**.
-```
+For throttling patterns (per-tick budgets, resumable cursors, `on_nth_tick`, flib's
+`on-tick-n`), see runtime-discipline.md §6.

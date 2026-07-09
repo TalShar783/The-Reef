@@ -4,12 +4,11 @@
 # Run this from the the-reef repo root with Claude Code, ONLY when the user
 # explicitly asks to refresh the reference docs.
 #
-# This script does NOT clone or download any repository. It never seeks out
-# other mod authors' work on its own. The reference source trees must be
-# placed in .skill-scratch/ manually, as a deliberate user action, after the
-# user has reviewed each source's license (see Step 1 for the expected paths).
-# The only network access is fetching Wube's official API JSON from
-# lua-api.factorio.com.
+# This script uses ONLY first-party Wube material: the official factorio-data
+# repository (published by Wube for exactly this kind of reference use) and the
+# official API JSON from lua-api.factorio.com. It never seeks out, clones, or
+# fetches any independent mod author's work — that is as-needed behavior,
+# executed only when the user specifically instructs it.
 #
 # Feeds the sources to Claude and writes three docs:
 #   docs/prototype-cheatsheet.md
@@ -20,7 +19,7 @@
 # Usage:
 #   bash build-factorio-skill.sh
 #
-# Requirements: curl, jq, the claude CLI, and manually provided source trees.
+# Requirements: git, curl, jq, the claude CLI, internet access.
 
 set -euo pipefail
 
@@ -30,27 +29,15 @@ OUT="$REPO_ROOT/docs"
 
 mkdir -p "$SCRATCH" "$OUT"
 
-echo "=== Step 1: Verify reference sources (provided manually — this script never clones) ==="
+echo "=== Step 1: Clone official Wube reference data ==="
 
-# Expected source trees, to be placed here BY THE USER as a deliberate action
-# after reviewing each source's license terms:
-#   $SCRATCH/factorio-data  — Wube's official base + Space Age data
-#   $SCRATCH/maraxsis       — Maraxsis (Space Age planet mod reference)
-#   $SCRATCH/cerys          — Cerys (space-location reference)
-missing=0
-for src in factorio-data maraxsis cerys; do
-  if [ ! -d "$SCRATCH/$src" ]; then
-    echo "MISSING: $SCRATCH/$src"
-    missing=1
-  fi
-done
-
-if [ "$missing" -eq 1 ]; then
-  echo ""
-  echo "This script does not fetch sources itself. Obtain the missing source"
-  echo "trees yourself (reviewing their licenses first) and place them at the"
-  echo "paths above, then re-run. Aborting without generating docs."
-  exit 1
+# Wube's official base + Space Age data (authoritative prototype definitions).
+# This is first-party material published for modder reference — the ONLY
+# repository this script touches.
+if [ ! -d "$SCRATCH/factorio-data" ]; then
+  git clone --depth=1 https://github.com/wube/factorio-data.git "$SCRATCH/factorio-data"
+else
+  echo "factorio-data already cloned, skipping."
 fi
 
 echo "=== Step 2: Gather key files ==="
@@ -75,35 +62,6 @@ echo "" >> "$WUBE_CONTEXT"
 echo "-- WUBE OFFICIAL DATA: Generator prototype --" >> "$WUBE_CONTEXT"
 cat "$WUBE_ENTITIES"/generator*.lua >> "$WUBE_CONTEXT" 2>/dev/null || true
 cat "$WUBE_ENTITIES"/fusion*.lua >> "$WUBE_CONTEXT" 2>/dev/null || true
-
-# -- Cerys planet prototype (direct analog to The Reef) --
-CERYS_CONTEXT="$SCRATCH/cerys-context.lua"
-echo "-- CERYS: Planet/space-location prototype --" > "$CERYS_CONTEXT"
-find "$SCRATCH/cerys/prototypes/planet" -name "*.lua" -exec cat {} \; >> "$CERYS_CONTEXT" 2>/dev/null || true
-echo "" >> "$CERYS_CONTEXT"
-echo "-- CERYS: data.lua (top-level require structure) --" >> "$CERYS_CONTEXT"
-cat "$SCRATCH/cerys/data.lua" >> "$CERYS_CONTEXT" 2>/dev/null || true
-echo "" >> "$CERYS_CONTEXT"
-echo "-- CERYS: control.lua (runtime event handler structure) --" >> "$CERYS_CONTEXT"
-cat "$SCRATCH/cerys/control.lua" >> "$CERYS_CONTEXT" 2>/dev/null || true
-echo "" >> "$CERYS_CONTEXT"
-echo "-- CERYS: info.json (dependency declaration pattern) --" >> "$CERYS_CONTEXT"
-cat "$SCRATCH/cerys/info.json" >> "$CERYS_CONTEXT" 2>/dev/null || true
-
-# -- Maraxsis planet prototype and key mechanics --
-MARAXSIS_CONTEXT="$SCRATCH/maraxsis-context.lua"
-echo "-- MARAXSIS: Planet prototype --" > "$MARAXSIS_CONTEXT"
-find "$SCRATCH/maraxsis/prototypes/planet" -name "*.lua" -exec cat {} \; >> "$MARAXSIS_CONTEXT" 2>/dev/null || true
-find "$SCRATCH/maraxsis/prototypes" -name "planet*.lua" -exec cat {} \; >> "$MARAXSIS_CONTEXT" 2>/dev/null || true
-echo "" >> "$MARAXSIS_CONTEXT"
-echo "-- MARAXSIS: data.lua (top-level require structure) --" >> "$MARAXSIS_CONTEXT"
-cat "$SCRATCH/maraxsis/data.lua" >> "$MARAXSIS_CONTEXT" 2>/dev/null || true
-echo "" >> "$MARAXSIS_CONTEXT"
-echo "-- MARAXSIS: control.lua (runtime event handler structure) --" >> "$MARAXSIS_CONTEXT"
-cat "$SCRATCH/maraxsis/control.lua" >> "$MARAXSIS_CONTEXT" 2>/dev/null || true
-echo "" >> "$MARAXSIS_CONTEXT"
-echo "-- MARAXSIS: Generator/power entity prototypes --" >> "$MARAXSIS_CONTEXT"
-find "$SCRATCH/maraxsis/prototypes/entity" -name "*generator*" -o -name "*power*" -o -name "*thruster*" 2>/dev/null | head -10 | xargs cat >> "$MARAXSIS_CONTEXT" 2>/dev/null || true
 
 echo "=== Step 3: Fetch lua-api.factorio.com key pages ==="
 
@@ -168,16 +126,10 @@ COMBINED="$SCRATCH/combined-context.txt"
   echo "Do NOT rely on training data for field names, event names, or API methods — use only what appears in the source material below."
   echo ""
   echo "=== SOURCE: WUBE OFFICIAL FACTORIO DATA ==="
-  head -c 60000 "$WUBE_CONTEXT"
-  echo ""
-  echo "=== SOURCE: CERYS MOD (space-location analog to The Reef) ==="
-  head -c 40000 "$CERYS_CONTEXT"
-  echo ""
-  echo "=== SOURCE: MARAXSIS MOD (gold-standard Space Age planet mod) ==="
-  head -c 40000 "$MARAXSIS_CONTEXT"
+  head -c 100000 "$WUBE_CONTEXT"
   echo ""
   echo "=== SOURCE: FACTORIO LUA API (runtime + prototype) ==="
-  head -c 60000 "$API_CONTEXT"
+  head -c 100000 "$API_CONTEXT"
 } > "$COMBINED"
 
 echo "Context assembled: $(wc -c < "$COMBINED") bytes"
@@ -224,10 +176,10 @@ This file covers Space Age-specific runtime API areas a developer of The Reef mo
 1. Space platform events — list every on_space_platform_* event found in the source, with its parameter names and types
 2. LuaSpacePlatform — all methods and attributes found in the source
 3. Asteroid spawning — how asteroid_spawn_definitions work at runtime; any hooks for modifying spawns
-4. Cross-surface item transfer — the pattern used by Cerys or Maraxsis for sending items between surfaces/platforms
+4. Cross-surface item transfer — events and APIs for moving items between surfaces/platforms (cargo pods, hubs)
 5. LuaSurface inventory APIs — methods for inserting/removing items from platform inventories
 6. on_entity_damaged — signature and use for shield-style scripting
-7. Common on_tick patterns seen in the reference mods
+7. Common on_tick patterns supported by the source material
 
 For each area: exact method/event name, parameters, return values if shown, and a one-sentence description of what it does. If something is NOT in the source material, note that explicitly — do not fill gaps with training data.
 
@@ -249,7 +201,7 @@ This file documents API mistakes that an LLM (Claude) is likely to make when wri
 
 1. Fields that exist in 1.x but were renamed or removed in 2.x
 2. Field names that look plausible but are wrong (misspellings, wrong nesting)
-3. Patterns in the reference mods that differ from what a naive implementation might guess
+3. Patterns in the official data that differ from what a naive implementation might guess
 4. Any explicit comments in the source code warning about common mistakes
 5. Differences between the planet prototype and the space-location prototype that a developer might confuse
 
