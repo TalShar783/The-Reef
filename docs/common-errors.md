@@ -1,7 +1,11 @@
 ```markdown
 # Common API Errors: Factorio 2.x / Space Age Mod Development
 
-Errors documented from Wube official data, Cerys, and Maraxsis source material. Do not speculate beyond what the source confirms.
+Errors documented from Wube official data, Cerys, and Maraxsis source material, plus the
+source/commit history of the top-downloaded Factorio mods (licenses and attribution for
+those mods are tabulated in runtime-discipline.md — no code is copied from them; entries
+below use original illustrative snippets and short attributed quotes only). Do not
+speculate beyond what the source confirms.
 
 ---
 

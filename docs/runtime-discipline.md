@@ -181,6 +181,56 @@ GUI router pattern-matches element names).
 - `on_entity_damaged` is extremely high-frequency; always register it with event
   filters.
 
+## Sources, licenses, and attribution
+
+This document describes facts, bug patterns, and engineering techniques observed in the
+mods below. It contains **no copied source code**: every code snippet in these docs is an
+original illustration, and the only verbatim material is short, attributed quotations of
+code comments, changelog entries, and commit messages, used as citations. Documenting
+facts and techniques does not make The Reef a derivative work of these mods. The license
+obligations below apply only if actual code is ever copied or adapted into The Reef:
+
+| Mod | Author(s) | License | If code were ever copied |
+|---|---|---|---|
+| Auto Deconstruct | softmix (portal: mindmix) | MIT | keep copyright + license notice |
+| Bottleneck | troelsbjerre (portal: trold) | MIT | keep copyright + license notice |
+| Even Distribution | 321freddy | **no license file** — all rights reserved by default | do not copy; ask the author |
+| FNEI | npo6ka | **no license file** — all rights reserved by default | do not copy; ask the author |
+| Factorissimo2 | MagmaMcFry | MIT | keep copyright + license notice |
+| Factorissimo 3 (notnotmelon fork) | notnotmelon (© MagmaMcFry) | MIT | keep copyright + license notice |
+| Helmod | Helfima | MIT | keep copyright + license notice |
+| Krastorio 2 | Krastor & Linver; 2.0 port maintained by raiguard | LGPL-3.0 | LGPL copyleft terms apply |
+| LTN (Logistic Train Network) | Optera | Custom: no distributing modified/derived code without written permission; no commercial use | **never copy**; written permission required |
+| Rampant | veden | GPL-3.0 | GPL copyleft terms apply |
+| Squeak Through | Supercheese | GPL-3.0 | GPL copyleft terms apply |
+| YARM | Octav "narc" Sandulescu (narc0tiq) | MIT | keep copyright + license notice |
+| flib | raiguard | MIT | keep copyright + license notice |
+
+In particular: **never copy or adapt LTN, FNEI, or Even Distribution code into The Reef.**
+Re-implement any needed behavior from the Factorio API documentation. GPL/LGPL code
+(Rampant, Squeak Through, Krastorio 2) may only be adapted if The Reef accepts the
+corresponding copyleft obligations — prefer re-implementation here too.
+
+### Credit for distinctive techniques
+
+Most patterns in this document evolved convergently across many mods (validity checking,
+the event matrix, per-tick budgets, migrations) and are credited inline where observed.
+A few appear to be the invention of a specific author and deserve explicit credit:
+
+- **Render-object TTL timer** (invisible render object with `time_to_live = N` +
+  `register_on_object_destroyed` as a tick scheduler) and the **string-keyed delayed
+  function registry** — notnotmelon, Factorissimo 3 (`lib/events.lua`).
+- **`for_n_of` resumable iterator, `on-tick-n` scheduler, and the `dictionary`
+  translation framework** — raiguard, flib.
+- **Ore-tracker entity cache** and the published ~4× Lua-table-vs-entity read
+  measurement — Octav "narc" Sandulescu, YARM (`libs/ore_tracker.lua`).
+- **`apply_when_object_exists` conditional-exclusion config** — Supercheese,
+  Squeak Through.
+- **The canonical event-registration matrix and the fluid-residue `= 0` workaround** —
+  Optera, LTN (described here factually; see license note above).
+- **Dedicated deterministic RNG** (`game.create_random_generator` with a constant seed)
+  as a mod-wide discipline — veden, Rampant.
+
 ## Maintenance note
 
 flib's GitHub repository (factoriolib/flib) was archived in June 2025; raiguard's
