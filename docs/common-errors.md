@@ -149,6 +149,96 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Using `global` instead of `storage` for script data in 2.x
+
+**Wrong:** `global.my_data = {}`
+**Correct:** `storage.my_data = {}`
+**Source:** YARM, flib, Factorissimo 3 (2.x ports) vs LTN (still 1.1, still `global`)
+**Note:** Factorio 2.0 renamed the persistent script data table from `global` to `storage`; every pre-2.0 tutorial and most training data uses the old name.
+
+---
+
+### Storing a function in `storage`
+
+**Wrong:** `storage.sites[i].iter_fn = function(t, k) ... end`
+**Correct:** Store a string key and look the function up in a file-local registry at call time
+**Source:** YARM `resmon.lua` (v0.11.2 migration note), Factorissimo 3 `lib/events.lua` delayed-function registry
+**Note:** Functions in `storage` block saving entirely in Factorio 2.0 and caused "mysterious desyncs" in earlier versions; YARM ships a migration just to strip them from old saves.
+
+---
+
+### Treating `get_contents()` as a name→count map in 2.x
+
+**Wrong:** `for name, count in pairs(inventory.get_contents()) do`
+**Correct:** `for _, item in pairs(inventory.get_contents()) do  -- item = {name=, count=, quality=}`
+**Source:** Even Distribution 2.0 port ("Temporary quality fix" commit, `scripts/helpers/LuaControl.lua`)
+**Note:** Quality changed the return shape to an array of records; name-keyed iteration silently produces garbage, and name-only item comparisons merge different qualities.
+
+---
+
+### More than 20 parameters in a localised string
+
+**Wrong:** `{"my-locale.key", p1, p2, ..., p21}`
+**Correct:** Nest sub-tables — `{"", {"my-locale.part1", p1, ...}, {"my-locale.part2", p11, ...}}` — each nested localised string gets its own 20-parameter budget
+**Source:** Helmod commits "Fix 'Too many parameters for localised string 21< 20 (limit)'" (×3)
+**Note:** The engine hard-caps localised string parameters at 20 and raises a runtime error, which typically only surfaces when data grows large enough to hit it.
+
+---
+
+### Registering conditional event handlers only in `on_init`
+
+**Wrong:** Registering `on_nth_tick`/`on_tick` based on storage state in `on_init` only
+**Correct:** Call the same registration function from `on_init`, `on_load`, AND `on_configuration_changed`, deriving registration purely from `storage`
+**Source:** AutoDeconstruct `control.lua` (`update_tick_event()`), LTN `script/init.lua` (`registerEvents()` in `on_load`), Factorissimo changelog ("Actually fix the multiplayer error this time")
+**Note:** Handlers are not saved; a multiplayer client that joins runs `on_load`, and if its handler set differs from the server's, the game desyncs or crashes.
+
+---
+
+### Tracking entity creation without the script-raised and cloned events
+
+**Wrong:** Handling only `on_built_entity` + `on_robot_built_entity`
+**Correct:** Also handle `script_raised_built`, `script_raised_revive`, `on_entity_cloned` (and `on_space_platform_built_entity` in 2.x); for removal also `script_raised_destroy` and the surface events (`on_pre_surface_deleted`, `on_surface_cleared`)
+**Source:** LTN `script/init.lua`, Bottleneck `control.lua`, Krastorio 2 scripts
+**Note:** Entities created or destroyed by other mods (or by cloning/editor tools) fire none of the player/robot events; every major tracking mod converged on the full matrix after bug reports.
+
+---
+
+### Confusing `valid` with `valid_for_read` on item stacks
+
+**Wrong:** `if stack.valid then local n = stack.count end`
+**Correct:** `if stack.valid_for_read then local n = stack.count end`
+**Source:** Krastorio 2 `scripts/tesla-coil.lua` (armor slot checks)
+**Note:** A `LuaItemStack` can be `valid` (the slot object exists) while empty and unreadable; reading `.count`/`.name` then throws.
+
+---
+
+### Assuming 1-indexing on `ItemInventoryPositions.stack`
+
+**Wrong:** `inventory[locator.stack]`
+**Correct:** `inventory[locator.stack + 1]`
+**Source:** Factorissimo 3 `script/roboport/roboport.lua` ("inventory_locator.stack is 0-indexed for some reason. adjust.")
+**Note:** The Lua API is 1-indexed almost everywhere; this field (item request proxy insert plans) is a confirmed 0-indexed exception.
+
+---
+
+### Testing fluid emptiness with `= 0` in wait/circuit conditions
+
+**Wrong:** Wait condition `fluid_count = 0`
+**Correct:** Use an "empty"-style condition; fractional residue rounds down to 0 while fluid remains
+**Source:** LTN `script/dispatcher.lua` ("workaround for leaving with fluid residue due to Factorio rounding down to 0")
+**Note:** Fluid amounts display and compare as integers but are fractional internally, so conditions "equal to 0" trigger while residue is still present.
+
+---
+
+### Assuming `on_init` always runs before the first `on_tick`
+
+**Wrong:** `storage.tasks[event.tick]` unguarded in a tick handler
+**Correct:** Nil-guard: `if not storage.tasks then return end`
+**Source:** flib `on-tick-n.lua` ("Failsafe for rare cases where on_tick can fire before on_init"), AutoDeconstruct changelog ("tick 0 on_tick before on_init" server crash)
+**Note:** On first multiplayer join at tick 0, `on_tick` can fire before `on_init` has populated storage.
+
+---
+
 ## Still Uncertain
 
 The following identifiers appear in the source material but their full signatures or constraints could not be confirmed from the provided excerpts alone. Verify against lua-api.factorio.com or the PlanetsLib source before use:
