@@ -1,5 +1,19 @@
 # The Reef — Claude Code Instructions
 
+## ⚠ SETUP TODO — not yet done (added 2026-07-09)
+
+`build-factorio-skill.sh` has never actually been run against real Wube source
+data on this machine — the docs it produces (`prototype-cheatsheet.md`,
+`space-age-api.md`, `common-errors.md`) were written without it, so their
+"unverified" callouts are more numerous than they should be. Before the next
+significant coding session:
+
+1. Populate `.skill-scratch/` manually per the script's requirements (see
+   `build-factorio-skill.sh` header comments), or let the script clone
+   `factorio-data` itself if you confirm that's acceptable.
+2. Run `bash build-factorio-skill.sh` and review the regenerated docs.
+3. Delete this section once done.
+
 ## Project Overview
 
 The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (like Shattered Planet) with asteroid/scrap mechanics. Dependencies: flib, PlanetsLib.
