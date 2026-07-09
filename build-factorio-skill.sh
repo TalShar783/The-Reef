@@ -2,8 +2,15 @@
 # build-factorio-skill.sh
 #
 # Run this from the the-reef repo root with Claude Code, ONLY when the user
-# explicitly asks to refresh the reference docs — it clones third-party
-# reference repositories, which must never happen unprompted.
+# explicitly asks to refresh the reference docs.
+#
+# This script does NOT clone or download any repository. It never seeks out
+# other mod authors' work on its own. The reference source trees must be
+# placed in .skill-scratch/ manually, as a deliberate user action, after the
+# user has reviewed each source's license (see Step 1 for the expected paths).
+# The only network access is fetching Wube's official API JSON from
+# lua-api.factorio.com.
+#
 # Feeds the sources to Claude and writes three docs:
 #   docs/prototype-cheatsheet.md
 #   docs/space-age-api.md
@@ -13,7 +20,7 @@
 # Usage:
 #   bash build-factorio-skill.sh
 #
-# Requirements: git, curl, node (for npx), internet access.
+# Requirements: curl, jq, the claude CLI, and manually provided source trees.
 
 set -euo pipefail
 
@@ -23,27 +30,27 @@ OUT="$REPO_ROOT/docs"
 
 mkdir -p "$SCRATCH" "$OUT"
 
-echo "=== Step 1: Clone reference sources ==="
+echo "=== Step 1: Verify reference sources (provided manually — this script never clones) ==="
 
-# Wube's official base + Space Age data (authoritative prototype definitions)
-if [ ! -d "$SCRATCH/factorio-data" ]; then
-  git clone --depth=1 https://github.com/wube/factorio-data.git "$SCRATCH/factorio-data"
-else
-  echo "factorio-data already cloned, skipping."
-fi
+# Expected source trees, to be placed here BY THE USER as a deliberate action
+# after reviewing each source's license terms:
+#   $SCRATCH/factorio-data  — Wube's official base + Space Age data
+#   $SCRATCH/maraxsis       — Maraxsis (Space Age planet mod reference)
+#   $SCRATCH/cerys          — Cerys (space-location reference)
+missing=0
+for src in factorio-data maraxsis cerys; do
+  if [ ! -d "$SCRATCH/$src" ]; then
+    echo "MISSING: $SCRATCH/$src"
+    missing=1
+  fi
+done
 
-# Maraxsis — gold-standard Space Age planet mod
-if [ ! -d "$SCRATCH/maraxsis" ]; then
-  git clone --depth=1 https://github.com/notnotmelon/maraxsis.git "$SCRATCH/maraxsis"
-else
-  echo "maraxsis already cloned, skipping."
-fi
-
-# Cerys — space-location mod, closest structural analog to The Reef
-if [ ! -d "$SCRATCH/cerys" ]; then
-  git clone --depth=1 https://github.com/danielmartin0/Cerys-Moon-of-Fulgora.git "$SCRATCH/cerys"
-else
-  echo "cerys already cloned, skipping."
+if [ "$missing" -eq 1 ]; then
+  echo ""
+  echo "This script does not fetch sources itself. Obtain the missing source"
+  echo "trees yourself (reviewing their licenses first) and place them at the"
+  echo "paths above, then re-run. Aborting without generating docs."
+  exit 1
 fi
 
 echo "=== Step 2: Gather key files ==="
