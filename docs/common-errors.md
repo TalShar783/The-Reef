@@ -1,7 +1,13 @@
-```markdown
 # Common API Errors: Factorio 2.x / Space Age Mod Development
 
-Errors documented from Wube official data, Cerys, and Maraxsis source material. Do not speculate beyond what the source confirms.
+Errors documented from Wube official data, the requirements of The Reef's direct
+dependencies (flib, PlanetsLib), errors hit directly during The Reef's own load testing,
+and confirmed Factorio 2.x engine behaviors (verify specifics against
+lua-api.factorio.com). Where a third-party mod is named in a Source line, it is cited as
+**evidence of a convergent pattern observed during research** — never as code
+provenance; all code snippets are original illustrations and nothing is copied from any
+third-party mod (see runtime-discipline.md §11). Do not speculate beyond what the
+source confirms.
 
 ---
 
@@ -9,8 +15,8 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 **Wrong:** `local asteroid_functions = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")`
 **Correct:** `local asteroid_util = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")`
-**Source:** Cerys `prototypes/planet/planet.lua`, Maraxsis planet prototype
-**Note:** The module internally names its table `asteroid_functions`, but every reference mod requires it under the alias `asteroid_util`; using the internal name as the variable name is technically valid Lua but diverges from the established convention and will break copy-pasted examples.
+**Source:** Wube `asteroid-spawn-definitions.lua` (the module's internal table name) vs the ecosystem-wide require alias
+**Note:** The module internally names its table `asteroid_functions`, but the established convention is to require it under the alias `asteroid_util`; using the internal name is technically valid Lua but diverges from convention and will break copy-pasted examples.
 
 ---
 
@@ -18,7 +24,7 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 **Wrong:** `asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.gleba_fulgora)`
 **Correct:** `asteroid_spawn_definitions = asteroid_util.spawn_definitions(asteroid_util.gleba_fulgora, 0.9)`
-**Source:** Cerys `prototypes/planet/planet.lua` (planet prototype vs space-connection)
+**Source:** Wube `asteroid-spawn-definitions.lua` (`spawn_definitions` second parameter)
 **Note:** The second argument is the route position (0–1 float) representing where along the route this body sits; omitting it produces route-wide spawn tables (correct for `space-connection`) but wrong for a `planet`/`space-location` prototype's own `asteroid_spawn_definitions`.
 
 ---
@@ -27,7 +33,7 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 **Wrong:** `data:extend({ { type = "planet", name = "the-reef", ... } })`
 **Correct:** `PlanetsLib:extend({ { type = "planet", name = "the-reef", ... } })`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Source:** PlanetsLib usage requirements (PlanetsLib is a Reef dependency)
 **Note:** PlanetsLib is declared as a hard dependency and wraps `data:extend` with additional registration logic; bypassing it causes the location to be invisible to PlanetsLib-aware mods.
 
 ---
@@ -36,16 +42,16 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 **Wrong:** `autoplace_settings = { ["tiles"] = { ... } }`
 **Correct:** `autoplace_settings = { ["tile"] = { ... } }`
-**Source:** Cerys `prototypes/planet/map-gen-settings.lua`, Maraxsis `map-gen.lua`
+**Source:** Factorio `MapGenSettings.autoplace_settings` schema — verify at lua-api.factorio.com; the singular key observed in Cerys and Maraxsis map-gen (evidence)
 **Note:** The key is the singular `"tile"`, matching the prototype category name; `"tiles"` silently produces no tile placement.
 
 ---
 
 ### Misspelling `procession_graphic_catalogue`
 
-**Wrong:** `procession_graphics_catalogue = planet_catalogue_cerys`
-**Correct:** `procession_graphic_catalogue = planet_catalogue_cerys`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Wrong:** `procession_graphics_catalogue = my_planet_catalogue`
+**Correct:** `procession_graphic_catalogue = my_planet_catalogue`
+**Source:** Factorio prototype field spelling — verify at lua-api.factorio.com; correct singular spelling observed in Cerys (evidence)
 **Note:** The field name uses the singular `graphic` with no trailing `s`; the plural spelling is silently ignored.
 
 ---
@@ -63,7 +69,7 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 **Wrong:** `surface_properties = { day-night-cycle = 3600, magnetic-field = 120 }`
 **Correct:** `surface_properties = { ["day-night-cycle"] = 3600, ["magnetic-field"] = 120 }`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Source:** Lua syntax — hyphenated keys require bracket string notation
 **Note:** Hyphenated keys are not valid Lua identifiers and must use bracket string notation; non-hyphenated properties like `gravity`, `pressure`, and `temperature` can use either form.
 
 ---
@@ -72,16 +78,16 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 **Wrong:** `subgroup = "space-connections"`
 **Correct:** `subgroup = "planet-connections"`
-**Source:** Cerys `prototypes/planet/planet.lua`, Maraxsis planet prototype
-**Note:** Every space-connection in the source uses `"planet-connections"` as the subgroup string; other values will break ordering in the starmap GUI.
+**Source:** Vanilla space-connection prototypes (`data.raw["space-connection"]`)
+**Note:** Vanilla space-connections use `"planet-connections"` as the subgroup string; other values will break ordering in the starmap GUI.
 
 ---
 
 ### Placing `is_satellite = true` at the top level instead of inside `orbit`
 
-**Wrong:** `{ type = "planet", name = "cerys", is_satellite = true, orbit = { ... } }`
-**Correct:** `{ type = "planet", name = "cerys", orbit = { ..., is_satellite = true } }`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Wrong:** `{ type = "planet", name = "my-moon", is_satellite = true, orbit = { ... } }`
+**Correct:** `{ type = "planet", name = "my-moon", orbit = { ..., is_satellite = true } }`
+**Source:** PlanetsLib orbit schema (verify against PlanetsLib source — a Reef dependency); placement observed in Cerys (evidence)
 **Note:** `is_satellite` is a field of the `orbit` sub-table, not of the planet prototype itself.
 
 ---
@@ -90,7 +96,7 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 **Wrong:** `orbit = { parent = "fulgora", distance = 1.39 }`
 **Correct:** `orbit = { parent = { type = "planet", name = "fulgora" }, distance = 1.39 }`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Source:** PlanetsLib orbit schema (verify against PlanetsLib source — a Reef dependency); shape observed in Cerys (evidence)
 **Note:** `parent` is a table with both `type` and `name` keys, not a bare string.
 
 ---
@@ -108,7 +114,7 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 **Wrong:** `PlanetsLib.extend({ ... })`
 **Correct:** `PlanetsLib:extend({ ... })`
-**Source:** Cerys `prototypes/planet/planet.lua`
+**Source:** PlanetsLib API — colon-call passes the required implicit `self`
 **Note:** The colon syntax passes the PlanetsLib object as the implicit `self` argument; dot notation omits it, causing a runtime error inside the library method.
 
 ---
@@ -149,15 +155,104 @@ Errors documented from Wube official data, Cerys, and Maraxsis source material. 
 
 ---
 
+### Using `global` instead of `storage` for script data in 2.x
+
+**Wrong:** `global.my_data = {}`
+**Correct:** `storage.my_data = {}`
+**Source:** Factorio 2.0 breaking change — see `storage` at lua-api.factorio.com
+**Note:** Factorio 2.0 renamed the persistent script data table from `global` to `storage`; every pre-2.0 tutorial and most training data uses the old name.
+
+---
+
+### Storing a function in `storage`
+
+**Wrong:** `storage.sites[i].iter_fn = function(t, k) ... end`
+**Correct:** Store a string key and look the function up in a file-local registry at call time
+**Source:** Factorio `storage` serialization rules; observed as a shipped bug + cleanup migration in YARM (evidence, not copied code)
+**Note:** Functions in `storage` block saving entirely in Factorio 2.0 and caused desyncs in earlier versions; if they ever reach a save, a migration is needed to strip them back out.
+
+---
+
+### Treating `get_contents()` as a name→count map in 2.x
+
+**Wrong:** `for name, count in pairs(inventory.get_contents()) do`
+**Correct:** `for _, item in pairs(inventory.get_contents()) do  -- item = {name=, count=, quality=}`
+**Source:** Factorio 2.0 `LuaInventory.get_contents` API change (quality); Even Distribution's 2.0 port fixed this exact misuse (evidence)
+**Note:** Quality changed the return shape to an array of records; name-keyed iteration silently produces garbage, and name-only item comparisons merge different qualities.
+
+---
+
+### More than 20 parameters in a localised string
+
+**Wrong:** `{"my-locale.key", p1, p2, ..., p21}`
+**Correct:** Nest sub-tables — `{"", {"my-locale.part1", p1, ...}, {"my-locale.part2", p11, ...}}` — each nested localised string gets its own 20-parameter budget
+**Source:** Engine limit — "Too many parameters for localised string 21 < 20 (limit)" runtime error; Helmod's history shows it hit repeatedly at scale (evidence)
+**Note:** The engine hard-caps localised string parameters at 20 and raises a runtime error, which typically only surfaces when data grows large enough to hit it.
+
+---
+
+### Registering conditional event handlers only in `on_init`
+
+**Wrong:** Registering `on_nth_tick`/`on_tick` based on storage state in `on_init` only
+**Correct:** Call the same registration function from `on_init`, `on_load`, AND `on_configuration_changed`, deriving registration purely from `storage`
+**Source:** Factorio handler lifecycle — handlers are not saved (see `script.on_load`); Auto Deconstruct and LTN converged on the same single-registration-function structure (evidence)
+**Note:** A multiplayer client that joins runs `on_load`, and if its handler set differs from the server's, the game desyncs or crashes.
+
+---
+
+### Tracking entity creation without the script-raised and cloned events
+
+**Wrong:** Handling only `on_built_entity` + `on_robot_built_entity`
+**Correct:** Also handle `script_raised_built`, `script_raised_revive`, `on_entity_cloned` (and `on_space_platform_built_entity` in 2.x); for removal also `script_raised_destroy` and the surface events (`on_pre_surface_deleted`, `on_surface_cleared`)
+**Source:** Factorio event API — see the full matrix in runtime-discipline.md §3
+**Note:** Entities created or destroyed by other mods (or by cloning/editor tools) fire none of the player/robot events; tracking silently breaks without the full set.
+
+---
+
+### Confusing `valid` with `valid_for_read` on item stacks
+
+**Wrong:** `if stack.valid then local n = stack.count end`
+**Correct:** `if stack.valid_for_read then local n = stack.count end`
+**Source:** `LuaItemStack.valid_for_read` at lua-api.factorio.com; checked pervasively in Krastorio 2 (evidence)
+**Note:** A `LuaItemStack` can be `valid` (the slot object exists) while empty and unreadable; reading `.count`/`.name` then throws.
+
+---
+
+### Assuming 1-indexing on `ItemInventoryPositions.stack`
+
+**Wrong:** `inventory[locator.stack]`
+**Correct:** `inventory[locator.stack + 1]`
+**Source:** `ItemInventoryPositions` (item request proxy insert plans) — verify at lua-api.factorio.com; flagged in a Factorissimo 3 source comment (evidence)
+**Note:** The Lua API is 1-indexed almost everywhere; this field is a confirmed 0-indexed exception. Verify indexing per field, not per API.
+
+---
+
+### Testing fluid emptiness with `= 0` in wait/circuit conditions
+
+**Wrong:** Wait condition `fluid_count = 0`
+**Correct:** Use an "empty"-style condition; fractional residue rounds down to 0 while fluid remains
+**Source:** Factorio engine behavior — fluid amounts are fractional internally but round down in conditions; LTN carries an explicit workaround for it (evidence)
+**Note:** Fluid amounts display and compare as integers, so conditions "equal to 0" trigger while residue is still present.
+
+---
+
+### Assuming `on_init` always runs before the first `on_tick`
+
+**Wrong:** `storage.tasks[event.tick]` unguarded in a tick handler
+**Correct:** Nil-guard: `if not storage.tasks then return end`
+**Source:** flib `on-tick-n.lua` ("Failsafe for rare cases where on_tick can fire before on_init") — flib is a Reef dependency
+**Note:** On first multiplayer join at tick 0, `on_tick` can fire before `on_init` has populated storage.
+
+---
+
 ## Still Uncertain
 
 The following identifiers appear in the source material but their full signatures or constraints could not be confirmed from the provided excerpts alone. Verify against lua-api.factorio.com or the PlanetsLib source before use:
 
-- `asteroid_spawn_influence` — appears as `asteroid_spawn_influence = 1` on the Cerys planet prototype; unclear whether it is required, what the valid range is, or whether it applies to `space-location` type prototypes at all.
-- `treat_missing_as_default` inside `autoplace_settings` sub-tables — used as `false` in Cerys map gen; exact semantics (and whether `true` is the silent default) not confirmed from the provided data.
-- `surface_render_parameters.shadow_opacity` — appears in Cerys (`shadow_opacity = 0.6`); full list of accepted sub-fields not shown in the source.
-- `persistent_ambient_sounds` — set to `{}` in Cerys; schema of the non-empty form not shown.
-- `pollutant_type = nil` vs `pollutant_type = "nil"` (string) — Cerys uses actual `nil`; Maraxsis uses the string `"nil"`. Which form the engine accepts for "no pollutant" is not confirmed from the provided source.
-- `auto_save_on_first_trip` — appears as `false` on the Maraxsis trench planet; whether this is a standard planet prototype field or Maraxsis-specific is not confirmed.
-- `label_orientation` — appears on both Cerys and Maraxsis trench prototypes; valid range and effect not described in the provided source.
-```
+- `asteroid_spawn_influence` — observed as `asteroid_spawn_influence = 1` on the Cerys planet prototype (evidence); unclear whether it is required, what the valid range is, or whether it applies to `space-location` type prototypes at all.
+- `treat_missing_as_default` inside `autoplace_settings` sub-tables — observed set to `false` in Cerys map gen (evidence); exact semantics (and whether `true` is the silent default) not confirmed.
+- `surface_render_parameters.shadow_opacity` — observed as `0.6` in Cerys (evidence); full list of accepted sub-fields not confirmed.
+- `persistent_ambient_sounds` — observed set to `{}` in Cerys (evidence); schema of the non-empty form not confirmed.
+- `pollutant_type = nil` vs `pollutant_type = "nil"` (string) — Cerys uses actual `nil`, Maraxsis the string `"nil"` (evidence); which form the engine accepts for "no pollutant" is not confirmed.
+- `auto_save_on_first_trip` — observed as `false` on the Maraxsis trench planet (evidence); whether it is a standard engine field or mod-specific is not confirmed.
+- `label_orientation` — observed on both Cerys and Maraxsis prototypes (evidence); valid range and effect not confirmed.
