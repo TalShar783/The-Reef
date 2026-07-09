@@ -34,6 +34,6 @@ The first three files are generated from first-party sources (Wube's official fa
 - Check common-errors.md before using any API method or prototype field that looks familiar from 1.x
 - Follow runtime-discipline.md for all control-stage code: entity validity, `storage` rules, the full built/removed event matrix, `on_load` re-registration, and per-tick work budgets
 - **Never copy code or assets from any third-party repository or mod.** If the user asks to take, port, or adapt anything from another mod, first locate and read that mod's license document, present its terms to the user, and take no action with that repository until the user confirms
-- **Do not clone or fetch third-party repositories on your own** — only when the user specifically instructs it. build-factorio-skill.sh does not clone anything; its reference sources must be placed in .skill-scratch/ manually by the user
+- **Do not clone or fetch third-party repositories on your own** — only when the user specifically instructs it. build-factorio-skill.sh clones Wube's official first-party `factorio-data` repo into `.skill-scratch/` when run (that clone is pre-authorized by this instruction); it never clones or fetches any third-party mod repository
 - Reference other mods only when The Reef directly depends on them (flib, PlanetsLib) or the user directs otherwise; avoid adopting techniques unique to a single mod rather than ecosystem-wide conventions
 - Dependency note: flib's GitHub repo was archived in June 2025 — check Codeberg (raiguard) for current flib development
