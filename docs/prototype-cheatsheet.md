@@ -42,8 +42,9 @@ PlanetsLib:extend({ { ... } })
 | `hidden` | bool | Hides the location from the starmap |
 | `orbit` | table | Parent/satellite relationship — **required by PlanetsLib** (see common-errors.md) |
 
-**`surface_properties` keys** (illustrative values — set your own; whether these apply
-to non-landable space-locations is **unverified**):
+**`surface_properties` keys** (values below observed working in Cerys — evidence of a
+loadable configuration, not copied code; set your own values. Whether these apply to
+non-landable space-locations is **unverified**):
 ```lua
 surface_properties = {
   ["day-night-cycle"] = 72000,   -- ticks

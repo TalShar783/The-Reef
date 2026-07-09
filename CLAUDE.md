@@ -6,7 +6,7 @@ The Reef is a Factorio 2.x / Space Age mod — a non-landable space-location (li
 
 ## Reference Documentation
 
-The first three files are generated from first-party sources only (Wube's official factorio-data and the Factorio Lua API); runtime-discipline.md is hand-maintained. Consult them before writing any prototype definitions or runtime scripting — do not rely on training data for field names or API signatures.
+The first three files are generated from first-party sources (Wube's official factorio-data and the Factorio Lua API); runtime-discipline.md is hand-maintained. Where any doc names a third-party mod, that is an evidence citation — a convergent pattern observed during research — never code provenance; no third-party code or assets are copied (see runtime-discipline.md §11). Consult these docs before writing any prototype definitions or runtime scripting — do not rely on training data for field names or API signatures.
 
 @docs/prototype-cheatsheet.md
 @docs/space-age-api.md

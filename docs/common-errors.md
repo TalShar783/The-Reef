@@ -3,8 +3,11 @@
 Errors documented from Wube official data, the requirements of The Reef's direct
 dependencies (flib, PlanetsLib), errors hit directly during The Reef's own load testing,
 and confirmed Factorio 2.x engine behaviors (verify specifics against
-lua-api.factorio.com). All code snippets are original illustrations — nothing is copied
-from third-party mods. Do not speculate beyond what the source confirms.
+lua-api.factorio.com). Where a third-party mod is named in a Source line, it is cited as
+**evidence of a convergent pattern observed during research** — never as code
+provenance; all code snippets are original illustrations and nothing is copied from any
+third-party mod (see runtime-discipline.md §11). Do not speculate beyond what the
+source confirms.
 
 ---
 
@@ -39,7 +42,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `autoplace_settings = { ["tiles"] = { ... } }`
 **Correct:** `autoplace_settings = { ["tile"] = { ... } }`
-**Source:** Factorio `MapGenSettings.autoplace_settings` schema — verify at lua-api.factorio.com
+**Source:** Factorio `MapGenSettings.autoplace_settings` schema — verify at lua-api.factorio.com; the singular key observed in Cerys and Maraxsis map-gen (evidence)
 **Note:** The key is the singular `"tile"`, matching the prototype category name; `"tiles"` silently produces no tile placement.
 
 ---
@@ -48,7 +51,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `procession_graphics_catalogue = my_planet_catalogue`
 **Correct:** `procession_graphic_catalogue = my_planet_catalogue`
-**Source:** Factorio prototype field spelling — verify at lua-api.factorio.com
+**Source:** Factorio prototype field spelling — verify at lua-api.factorio.com; correct singular spelling observed in Cerys (evidence)
 **Note:** The field name uses the singular `graphic` with no trailing `s`; the plural spelling is silently ignored.
 
 ---
@@ -84,7 +87,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `{ type = "planet", name = "my-moon", is_satellite = true, orbit = { ... } }`
 **Correct:** `{ type = "planet", name = "my-moon", orbit = { ..., is_satellite = true } }`
-**Source:** PlanetsLib orbit schema (verify against PlanetsLib source — a Reef dependency)
+**Source:** PlanetsLib orbit schema (verify against PlanetsLib source — a Reef dependency); placement observed in Cerys (evidence)
 **Note:** `is_satellite` is a field of the `orbit` sub-table, not of the planet prototype itself.
 
 ---
@@ -93,7 +96,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `orbit = { parent = "fulgora", distance = 1.39 }`
 **Correct:** `orbit = { parent = { type = "planet", name = "fulgora" }, distance = 1.39 }`
-**Source:** PlanetsLib orbit schema (verify against PlanetsLib source — a Reef dependency)
+**Source:** PlanetsLib orbit schema (verify against PlanetsLib source — a Reef dependency); shape observed in Cerys (evidence)
 **Note:** `parent` is a table with both `type` and `name` keys, not a bare string.
 
 ---
@@ -165,7 +168,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `storage.sites[i].iter_fn = function(t, k) ... end`
 **Correct:** Store a string key and look the function up in a file-local registry at call time
-**Source:** Factorio `storage` serialization rules — only serializable data is allowed
+**Source:** Factorio `storage` serialization rules; observed as a shipped bug + cleanup migration in YARM (evidence, not copied code)
 **Note:** Functions in `storage` block saving entirely in Factorio 2.0 and caused desyncs in earlier versions; if they ever reach a save, a migration is needed to strip them back out.
 
 ---
@@ -174,7 +177,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `for name, count in pairs(inventory.get_contents()) do`
 **Correct:** `for _, item in pairs(inventory.get_contents()) do  -- item = {name=, count=, quality=}`
-**Source:** Factorio 2.0 `LuaInventory.get_contents` API change (quality) — verify at lua-api.factorio.com
+**Source:** Factorio 2.0 `LuaInventory.get_contents` API change (quality); Even Distribution's 2.0 port fixed this exact misuse (evidence)
 **Note:** Quality changed the return shape to an array of records; name-keyed iteration silently produces garbage, and name-only item comparisons merge different qualities.
 
 ---
@@ -183,7 +186,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `{"my-locale.key", p1, p2, ..., p21}`
 **Correct:** Nest sub-tables — `{"", {"my-locale.part1", p1, ...}, {"my-locale.part2", p11, ...}}` — each nested localised string gets its own 20-parameter budget
-**Source:** Engine limit — "Too many parameters for localised string 21 < 20 (limit)" runtime error
+**Source:** Engine limit — "Too many parameters for localised string 21 < 20 (limit)" runtime error; Helmod's history shows it hit repeatedly at scale (evidence)
 **Note:** The engine hard-caps localised string parameters at 20 and raises a runtime error, which typically only surfaces when data grows large enough to hit it.
 
 ---
@@ -192,7 +195,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** Registering `on_nth_tick`/`on_tick` based on storage state in `on_init` only
 **Correct:** Call the same registration function from `on_init`, `on_load`, AND `on_configuration_changed`, deriving registration purely from `storage`
-**Source:** Factorio handler lifecycle — event handlers are not saved; see `script.on_load` at lua-api.factorio.com
+**Source:** Factorio handler lifecycle — handlers are not saved (see `script.on_load`); Auto Deconstruct and LTN converged on the same single-registration-function structure (evidence)
 **Note:** A multiplayer client that joins runs `on_load`, and if its handler set differs from the server's, the game desyncs or crashes.
 
 ---
@@ -210,7 +213,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `if stack.valid then local n = stack.count end`
 **Correct:** `if stack.valid_for_read then local n = stack.count end`
-**Source:** `LuaItemStack.valid_for_read` at lua-api.factorio.com
+**Source:** `LuaItemStack.valid_for_read` at lua-api.factorio.com; checked pervasively in Krastorio 2 (evidence)
 **Note:** A `LuaItemStack` can be `valid` (the slot object exists) while empty and unreadable; reading `.count`/`.name` then throws.
 
 ---
@@ -219,7 +222,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** `inventory[locator.stack]`
 **Correct:** `inventory[locator.stack + 1]`
-**Source:** `ItemInventoryPositions` (item request proxy insert plans) — verify at lua-api.factorio.com
+**Source:** `ItemInventoryPositions` (item request proxy insert plans) — verify at lua-api.factorio.com; flagged in a Factorissimo 3 source comment (evidence)
 **Note:** The Lua API is 1-indexed almost everywhere; this field is a confirmed 0-indexed exception. Verify indexing per field, not per API.
 
 ---
@@ -228,7 +231,7 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 **Wrong:** Wait condition `fluid_count = 0`
 **Correct:** Use an "empty"-style condition; fractional residue rounds down to 0 while fluid remains
-**Source:** Factorio engine behavior — fluid amounts are fractional internally but round down in conditions
+**Source:** Factorio engine behavior — fluid amounts are fractional internally but round down in conditions; LTN carries an explicit workaround for it (evidence)
 **Note:** Fluid amounts display and compare as integers, so conditions "equal to 0" trigger while residue is still present.
 
 ---
@@ -246,10 +249,10 @@ from third-party mods. Do not speculate beyond what the source confirms.
 
 The following identifiers appear in the source material but their full signatures or constraints could not be confirmed from the provided excerpts alone. Verify against lua-api.factorio.com or the PlanetsLib source before use:
 
-- `asteroid_spawn_influence` — seen in the wild as `asteroid_spawn_influence = 1` on planet prototypes; unclear whether it is required, what the valid range is, or whether it applies to `space-location` type prototypes at all.
-- `treat_missing_as_default` inside `autoplace_settings` sub-tables — seen set to `false` in the wild; exact semantics (and whether `true` is the silent default) not confirmed.
-- `surface_render_parameters.shadow_opacity` — seen as `0.6` in the wild; full list of accepted sub-fields not confirmed.
-- `persistent_ambient_sounds` — seen set to `{}` in the wild; schema of the non-empty form not confirmed.
-- `pollutant_type = nil` vs `pollutant_type = "nil"` (string) — both forms are seen in the wild; which form the engine accepts for "no pollutant" is not confirmed.
-- `auto_save_on_first_trip` — seen as `false` in the wild on planet prototypes; whether it is a standard engine field or mod-specific is not confirmed.
-- `label_orientation` — seen in the wild on planet/space-location prototypes; valid range and effect not confirmed.
+- `asteroid_spawn_influence` — observed as `asteroid_spawn_influence = 1` on the Cerys planet prototype (evidence); unclear whether it is required, what the valid range is, or whether it applies to `space-location` type prototypes at all.
+- `treat_missing_as_default` inside `autoplace_settings` sub-tables — observed set to `false` in Cerys map gen (evidence); exact semantics (and whether `true` is the silent default) not confirmed.
+- `surface_render_parameters.shadow_opacity` — observed as `0.6` in Cerys (evidence); full list of accepted sub-fields not confirmed.
+- `persistent_ambient_sounds` — observed set to `{}` in Cerys (evidence); schema of the non-empty form not confirmed.
+- `pollutant_type = nil` vs `pollutant_type = "nil"` (string) — Cerys uses actual `nil`, Maraxsis the string `"nil"` (evidence); which form the engine accepts for "no pollutant" is not confirmed.
+- `auto_save_on_first_trip` — observed as `false` on the Maraxsis trench planet (evidence); whether it is a standard engine field or mod-specific is not confirmed.
+- `label_orientation` — observed on both Cerys and Maraxsis prototypes (evidence); valid range and effect not confirmed.
