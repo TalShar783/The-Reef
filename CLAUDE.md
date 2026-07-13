@@ -66,8 +66,11 @@ Branch: BUILD-1
 Last decisions: [3-5 bullets]
 Next immediate step: [single clear action]
 Open questions: [anything unresolved]
+Pending-unverified: [skill-relevant assumptions awaiting in-game confirmation — propagate to the skill before deleting this file]
 Recent gotchas: [new skill entries worth highlighting]
 ```
+
+Keep HANDOFF.md short (~15 lines): phase, next step, open questions, pending-unverified. Detailed state lives in git history and session memory, not here.
 
 HANDOFF.md is gitignored and ephemeral; the PreCompact/PostCompact hooks back it up and re-inject it. Delete it when starting a genuinely new phase.
 
