@@ -3,12 +3,6 @@
     "PowerShell(Get-Content)"
   ],
   "permissions": {
-    "allow": [
-      "Bash(rtk grep *)",
-      "Bash(rtk git status *)",
-      "Bash(rtk read *)",
-      "Bash(rtk ls *)",
-      "Bash(rtk find *)"
-    ]
+    "allow": []
   }
 }
