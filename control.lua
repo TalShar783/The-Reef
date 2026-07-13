@@ -1,0 +1,100 @@
+-- control.lua: runtime event handlers entry point
+
+-- Ithaca surface tile generation (self-registers its own events on require)
+require("scripts.ithaca-surface")
+
+-- Cargo Hatch
+local cargo_hatch = require("scripts.cargo-hatch")
+
+-- Basic PMR
+local pmr = require("scripts.pmr")
+
+-- Fluid PMR
+local fluid_pmr = require("scripts.fluid-pmr")
+
+-- Charybdis gravity well (on_tick self-registers inside the module; only
+-- on_init/on_configuration_changed need dispatching from here)
+local charybdis_gravity = require("scripts.charybdis-gravity")
+
+script.on_init(function()
+    cargo_hatch.on_init()
+    pmr.on_init()
+    fluid_pmr.on_init()
+    charybdis_gravity.on_init()
+    storage.ithaca_center_patch_placed = false
+end)
+
+script.on_configuration_changed(function()
+    cargo_hatch.on_configuration_changed()
+    pmr.on_configuration_changed()
+    charybdis_gravity.on_configuration_changed()
+end)
+
+-- (No on_research_finished handler: cargo-hatch research effects are read
+-- live from force.technologies[...].level, so script/editor research and
+-- un-research are respected without event bookkeeping.)
+
+-- Register / unregister hatches + PMR on build and removal.
+-- script.on_event only allows ONE handler per event, so cargo-hatch and PMR
+-- share a single dispatcher per event rather than each calling on_event
+-- separately (a second call would silently replace the first handler).
+local managed_entity_filter = {
+    { filter = "name", name = "cargo-hatch" },
+    { filter = "name", name = "basic-pmr" },
+    { filter = "name", name = "fluid-pmr" },
+}
+
+local function dispatch_built(event)
+    local entity = event.entity or event.created_entity
+    if not entity then return end
+    if entity.name == "basic-pmr" then
+        pmr.on_built(event)
+    elseif entity.name == "fluid-pmr" then
+        fluid_pmr.on_built(event)
+    else
+        cargo_hatch.on_built(event)
+    end
+end
+
+local function dispatch_removed(event)
+    local entity = event.entity
+    if not entity then return end
+    if entity.name == "basic-pmr" then
+        pmr.on_removed(event)
+    elseif entity.name == "fluid-pmr" then
+        fluid_pmr.on_removed(event)
+    else
+        cargo_hatch.on_removed(event)
+    end
+end
+
+script.on_event(defines.events.on_pre_build,                   cargo_hatch.on_pre_build)
+script.on_event(defines.events.on_built_entity,                dispatch_built, managed_entity_filter)
+script.on_event(defines.events.on_robot_built_entity,          dispatch_built, managed_entity_filter)
+script.on_event(defines.events.on_space_platform_built_entity, dispatch_built, managed_entity_filter)
+script.on_event(defines.events.script_raised_built,            dispatch_built, managed_entity_filter)
+script.on_event(defines.events.script_raised_revive,           dispatch_built, managed_entity_filter)
+
+script.on_event(defines.events.on_player_mined_entity,         dispatch_removed, managed_entity_filter)
+script.on_event(defines.events.on_robot_mined_entity,          dispatch_removed, managed_entity_filter)
+script.on_event(defines.events.on_space_platform_mined_entity, dispatch_removed, managed_entity_filter)
+script.on_event(defines.events.on_entity_died,                 dispatch_removed, managed_entity_filter)
+script.on_event(defines.events.script_raised_destroy,          dispatch_removed, managed_entity_filter)
+
+-- Periodic work runs on per-module cadences via on_nth_tick — the engine
+-- schedules the calls, replacing an every-tick dispatcher of modulo checks.
+-- NOTE: on_nth_tick allows only ONE handler per interval value; if two
+-- modules ever share an interval, they must share a dispatcher for it.
+script.on_nth_tick(cargo_hatch.TICK_INTERVAL, cargo_hatch.on_nth_tick)  -- 5
+script.on_nth_tick(pmr.TICK_INTERVAL,         pmr.on_nth_tick)          -- 6
+script.on_nth_tick(fluid_pmr.TICK_INTERVAL,   fluid_pmr.on_nth_tick)    -- 30
+script.on_event(defines.events.on_gui_opened, fluid_pmr.on_gui_opened)
+script.on_event(defines.events.on_gui_closed, fluid_pmr.on_gui_closed)
+script.on_event(defines.events.on_gui_click,  fluid_pmr.on_gui_click)
+
+-- Phase 5+: attractor and shield scripting
+-- require("scripts.attractor")
+-- require("scripts.shield")
+
+-- Phase 6+: railgun cross-surface transfer
+-- require("scripts.railgun")

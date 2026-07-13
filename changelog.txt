@@ -1,0 +1,35 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2026-06-27
+  Changes:
+    - Initial mod skeleton: info.json, data.lua, control.lua, settings.lua, locale stubs
+    - Added CLAUDE.md with project context and reference docs
+    - Phase 1: The Reef space-location prototype, Fulgora→Reef space-connection
+    - Phase 1: The Reef Discovery technology (requires fulgora-visitation)
+    - Phase 1: Initial asteroid spawn definitions using fulgora_aquilo route table
+    - Phase 2: Starship Scrap Chunk item and asteroid-chunk entity (placeholder graphics)
+    - Phase 2: Starship Scrap and Dilithium Crystal items
+    - Phase 2: Crusher recipe (chunk → iron/copper/steel + 3% dilithium drop)
+    - Phase 2: Recycler recipe (scrap → misc outputs)
+    - Phase 2: Scrap chunks added to approach corridor and orbital spawn pools
+    - Phase 2: Discovery technology now unlocks both processing recipes
+    - Phase 3: Basic PMR entity (placeholder graphics, assembling-machine-1 base)
+    - Phase 3: PMR recipe category (the-reef-pmr)
+    - Phase 3: 3 test PMR recipes (green circuits, grenades, piercing magazines)
+    - Phase 3: Dilithium Fuel Cell item and recipe (in the PMR)
+    - Phase 3: Basic PMR technology (gated behind Reef discovery)
+    - Phase 3: Ithaca space-location and The Reef -> Ithaca connection
+    - Phase 3: Ithaca discovery technology (gated behind Basic PMR)
+    - Phase 4: dilithium-fuel fuel category; Dilithium Fuel Cells gain fuel_value 2GJ
+    - Phase 4: Dilithium Science Pack (type=tool, produced in PMR)
+    - Phase 4: Dilithium Reactor T1 entity (reactor deepcopy, dilithium-fuel, 20MW)
+    - Phase 4: dilithium-science technology (gates Dilithium Era)
+    - Phase 4: dilithium-reactor-1 technology (costs dilithium science packs)
+    - Phase 4: Cargo Hatch entity, item, recipe, technology
+    - Phase 4: cargo-hatch.lua — 1-stack Option B sync, configuration GUI
+    - Charybdis space-location, Ithaca -> Charybdis connection, discovery technology
+    - charybdis-gravity.lua — scripted depth-scaled gravity well: weak thrust
+      operates freely near Ithaca but stalls and is dragged in past a
+      depth-dependent point of no return; consumed platforms are destroyed
+      and anyone aboard is evacuated to Nauvis. Ported from the gravity-well-test
+      prototype mod after in-game verification.

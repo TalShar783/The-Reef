@@ -1,0 +1,8 @@
+# Scratch data from build-factorio-skill.sh
+.skill-scratch/
+
+# Session handoff documents
+HANDOFF.md
+
+# Claude Code local settings
+.claude/settings.local.json
