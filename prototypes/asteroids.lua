@@ -10,24 +10,41 @@ scrap_chunk.minable = {
     result          = "starship-scrap-chunk",
     mining_particle = "metallic-asteroid-chunk-particle-medium",
 }
-scrap_chunk.graphics_set.variations = 
+scrap_chunk.graphics_set.variations =
 {
     {
         color_texture = {
-            filename =          "__the-reef__/graphics/entity/starship-scrap/asteroid-starship-small-color-1.png",
+            filename =          "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-color-1.png",
             size = 128,
             scale = 0.195,
         },
         normal_map = {
-        filename =              "__the-reef__/graphics/entity/starship-scrap/asteroid-starship-small-normal-1.png",
+        filename =              "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-normal-1.png",
         size = 128,
         scale = 0.195,
         premul_alpha = false,
-
         },
-        
         roughness_map = {
-            filename =         "__the-reef__/graphics/entity/starship-scrap/asteroid-starship-small-roughness-1.png",
+            filename =         "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-roughness-1.png",
+            size = 128,
+            scale = 0.195,
+            premul_alpha = false,
+        }
+    },
+        {
+        color_texture = {
+            filename =          "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-color-2.png",
+            size = 128,
+            scale = 0.195,
+        },
+        normal_map = {
+        filename =              "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-normal-2.png",
+        size = 128,
+        scale = 0.195,
+        premul_alpha = false,
+        },
+        roughness_map = {
+            filename =         "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-roughness-2.png",
             size = 128,
             scale = 0.195,
             premul_alpha = false,
