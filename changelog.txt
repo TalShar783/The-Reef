@@ -2,6 +2,7 @@
 Version: 0.1.0
 Date: 2026-06-27
   Changes:
+    - Compatibility reviewed against Factorio 2.1.11 (2026-07-14): no changes affect this mod
     - Initial mod skeleton: info.json, data.lua, control.lua, settings.lua, locale stubs
     - Added CLAUDE.md with project context and reference docs
     - Phase 1: The Reef space-location prototype, Fulgora→Reef space-connection
