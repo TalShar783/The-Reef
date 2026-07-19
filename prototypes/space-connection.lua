@@ -1,51 +1,52 @@
 local asteroid_util = require("__space-age__.prototypes.planet.asteroid-spawn-definitions")
-local inner_reef_route = {
-  probability_on_range_chunk = {
-  {position = 0.001,   probability = 0.0075, angle_when_stopped = asteroid_util.chunk_angle},
-  {position = 0.199, probability = 0.005, angle_when_stopped = asteroid_util.chunk_angle},
-  {position = 0.2,   probability = 0.001,             angle_when_stopped = asteroid_util.chunk_angle},
-  {position = 0.99,   probability = 0.000,             angle_when_stopped = asteroid_util.chunk_angle},
 
-  },
-  probability_on_range_small = {
-  {position = 0.001,   probability = 0.0025, angle_when_stopped = asteroid_util.small_angle},
-  {position = 0.199, probability = 0.005, angle_when_stopped = asteroid_util.small_angle},
-  {position = 0.2,   probability = 0.0075,             angle_when_stopped = asteroid_util.small_angle},
-  {position = 0.99,   probability = 0.000,             angle_when_stopped = asteroid_util.small_angle},
-
-  },
-  probability_on_range_medium = {
-  {position = 0.001,   probability = 0.000, angle_when_stopped = asteroid_util.medium_angle},
-  {position = 0.19,   probability = 0.000, angle_when_stopped = asteroid_util.medium_angle},
-  {position = 0.2,   probability = 0.0025, angle_when_stopped = asteroid_util.medium_angle},
-  {position = 0.3, probability = 0.005, angle_when_stopped = asteroid_util.medium_angle},
-  {position = 0.4,   probability = 0.0075,             angle_when_stopped = asteroid_util.medium_angle},
-  {position = 0.99,   probability = 0.000,             angle_when_stopped = asteroid_util.medium_angle},
-  
-  },
-  probability_on_range_big = {
-  {position = 0.001,   probability = 0.000, angle_when_stopped = asteroid_util.big_angle},
-  {position = 0.39,   probability = 0.000, angle_when_stopped = asteroid_util.big_angle},
-  {position = 0.4,   probability = 0.001, angle_when_stopped = asteroid_util.big_angle},
-  {position = 0.5, probability = 0.002, angle_when_stopped = asteroid_util.big_angle},
-  {position = 0.6,   probability = 0.003,             angle_when_stopped = asteroid_util.big_angle},
-  {position = 0.99,   probability = 0.005,             angle_when_stopped = asteroid_util.big_angle},
-
-  },
-  probability_on_range_huge = {
-  {position = 0.001,   probability = 0.0000, angle_when_stopped = asteroid_util.huge_angle},
-  {position = 0.59, probability = 0.0000, angle_when_stopped = asteroid_util.huge_angle},
-  {position = 0.6,   probability = 0.0001, angle_when_stopped = asteroid_util.huge_angle},
-  {position = 0.7, probability = 0.002, angle_when_stopped = asteroid_util.huge_angle},
-  {position = 0.99,   probability = 0.01,             angle_when_stopped = asteroid_util.huge_angle},
-},
-  type_ratios = {
-    -- Metallic, Carbonic, Oxide, Prometheum, in that order.
-    {position = 0.001, ratios ={3, 3, 3, 0}},
-    {position = 0.99, ratios ={4, 5, 6, 0}}
-  }
-
-}
+-- local inner_reef_route = {
+--   probability_on_range_chunk = {
+--   {position = 0.001,   probability = 0.0075, angle_when_stopped = asteroid_util.chunk_angle},
+--   {position = 0.199, probability = 0.005, angle_when_stopped = asteroid_util.chunk_angle},
+--   {position = 0.2,   probability = 0.001,             angle_when_stopped = asteroid_util.chunk_angle},
+--   {position = 0.99,   probability = 0.000,             angle_when_stopped = asteroid_util.chunk_angle},
+--
+--   },
+--   probability_on_range_small = {
+--   {position = 0.001,   probability = 0.0025, angle_when_stopped = asteroid_util.small_angle},
+--   {position = 0.199, probability = 0.005, angle_when_stopped = asteroid_util.small_angle},
+--   {position = 0.2,   probability = 0.0075,             angle_when_stopped = asteroid_util.small_angle},
+--   {position = 0.99,   probability = 0.000,             angle_when_stopped = asteroid_util.small_angle},
+--
+--   },
+--   probability_on_range_medium = {
+--   {position = 0.001,   probability = 0.000, angle_when_stopped = asteroid_util.medium_angle},
+--   {position = 0.19,   probability = 0.000, angle_when_stopped = asteroid_util.medium_angle},
+--   {position = 0.2,   probability = 0.0025, angle_when_stopped = asteroid_util.medium_angle},
+--   {position = 0.3, probability = 0.005, angle_when_stopped = asteroid_util.medium_angle},
+--   {position = 0.4,   probability = 0.0075,             angle_when_stopped = asteroid_util.medium_angle},
+--   {position = 0.99,   probability = 0.000,             angle_when_stopped = asteroid_util.medium_angle},
+--
+--   },
+--   probability_on_range_big = {
+--   {position = 0.001,   probability = 0.000, angle_when_stopped = asteroid_util.big_angle},
+--   {position = 0.39,   probability = 0.000, angle_when_stopped = asteroid_util.big_angle},
+--   {position = 0.4,   probability = 0.001, angle_when_stopped = asteroid_util.big_angle},
+--   {position = 0.5, probability = 0.002, angle_when_stopped = asteroid_util.big_angle},
+--   {position = 0.6,   probability = 0.003,             angle_when_stopped = asteroid_util.big_angle},
+--   {position = 0.99,   probability = 0.005,             angle_when_stopped = asteroid_util.big_angle},
+--
+--   },
+--   probability_on_range_huge = {
+--   {position = 0.001,   probability = 0.0000, angle_when_stopped = asteroid_util.huge_angle},
+--   {position = 0.59, probability = 0.0000, angle_when_stopped = asteroid_util.huge_angle},
+--   {position = 0.6,   probability = 0.0001, angle_when_stopped = asteroid_util.huge_angle},
+--   {position = 0.7, probability = 0.002, angle_when_stopped = asteroid_util.huge_angle},
+--   {position = 0.99,   probability = 0.01,             angle_when_stopped = asteroid_util.huge_angle},
+-- },
+--   type_ratios = {
+--     -- Metallic, Carbonic, Oxide, Prometheum, in that order.
+--     {position = 0.001, ratios ={3, 3, 3, 0}},
+--     {position = 0.99, ratios ={4, 5, 6, 0}}
+--   }
+--
+-- }
 
 
 -- Route from Fulgora to The Reef.
@@ -82,8 +83,7 @@ data:extend({
 
 
 
--- Route from the Reef to the Inner Reef. This is a long route with lots of different asteroids depending on how deep you go.
--- Also features Strange Matter Particles, which are a rare spawn that can be collected and used in the Strange Matter Net.
+-- Test route for the Inner Reef. Spawns only starship scrap, all the time.
 data:extend({
   {
     type     = "space-connection",
@@ -94,9 +94,21 @@ data:extend({
     order    = "e[the-reef]-b[inner]",
     length   = 4000000,
     -- Approach: Small and chunks in the first 1/5. Each 1/5 you go adds the next size. Particles start at halfway.
-    asteroid_spawn_definitions = (function()
-      local spawns = asteroid_util.spawn_definitions(inner_reef_route)
-      return spawns
-    end)(),
+    -- asteroid_spawn_definitions = (function()
+    --   local spawns = asteroid_util.spawn_definitions(inner_reef_route)
+    --   return spawns
+    -- end)(),
+
+    -- Starship Scrap chunks only, flat probability along the full route.
+    asteroid_spawn_definitions = {
+      {
+        asteroid = "starship-scrap-chunk",
+        type     = "asteroid-chunk",
+        spawn_points = {
+          { distance = 0.000001, probability = 0.0075, speed = asteroid_util.standard_speed, angle_when_stopped = asteroid_util.chunk_angle },
+          { distance = 0.999999,  probability = 0.0075, speed = asteroid_util.standard_speed, angle_when_stopped = asteroid_util.chunk_angle },
+        },
+      },
+    },
   },
 })

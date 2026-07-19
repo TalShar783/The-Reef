@@ -49,6 +49,44 @@ scrap_chunk.graphics_set.variations =
             scale = 0.195,
             premul_alpha = false,
         }
+    },
+            {
+        color_texture = {
+            filename =          "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-color-3.png",
+            size = 128,
+            scale = 0.195,
+        },
+        normal_map = {
+        filename =              "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-normal-3.png",
+        size = 128,
+        scale = 0.195,
+        premul_alpha = false,
+        },
+        roughness_map = {
+            filename =         "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-roughness-3.png",
+            size = 128,
+            scale = 0.195,
+            premul_alpha = false,
+        }
+    },
+            {
+        color_texture = {
+            filename =          "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-color-4.png",
+            size = 128,
+            scale = 0.195,
+        },
+        normal_map = {
+        filename =              "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-normal-4.png",
+        size = 128,
+        scale = 0.195,
+        premul_alpha = false,
+        },
+        roughness_map = {
+            filename =         "__the-reef__/graphics/entity/starship-scrap/chunks/asteroid-starship-chunk-roughness-4.png",
+            size = 128,
+            scale = 0.195,
+            premul_alpha = false,
+        }
     }
 
 }
