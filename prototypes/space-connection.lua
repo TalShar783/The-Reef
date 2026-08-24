@@ -99,7 +99,9 @@ data:extend({
     --   return spawns
     -- end)(),
 
-    -- Starship Scrap chunks only, flat probability along the full route.
+    -- Starship Scrap chunks, small, and medium, flat probability along the full route.
+    -- Small/medium rates match vanilla's medium-asteroid base probability (e.g. fulgora_aquilo's
+    -- fulgora_medium = 0.0025) since vanilla never spawns "small" directly on a route to match against.
     asteroid_spawn_definitions = {
       {
         asteroid = "starship-scrap-chunk",
@@ -107,6 +109,20 @@ data:extend({
         spawn_points = {
           { distance = 0.000001, probability = 0.0075, speed = asteroid_util.standard_speed, angle_when_stopped = asteroid_util.chunk_angle },
           { distance = 0.999999,  probability = 0.0075, speed = asteroid_util.standard_speed, angle_when_stopped = asteroid_util.chunk_angle },
+        },
+      },
+      {
+        asteroid = "starship-scrap-small",
+        spawn_points = {
+          { distance = 0.000001, probability = 0.0025, speed = asteroid_util.standard_speed, angle_when_stopped = asteroid_util.small_angle },
+          { distance = 0.999999,  probability = 0.0025, speed = asteroid_util.standard_speed, angle_when_stopped = asteroid_util.small_angle },
+        },
+      },
+      {
+        asteroid = "starship-scrap-medium",
+        spawn_points = {
+          { distance = 0.000001, probability = 0.0025, speed = asteroid_util.standard_speed, angle_when_stopped = asteroid_util.medium_angle },
+          { distance = 0.999999,  probability = 0.0025, speed = asteroid_util.standard_speed, angle_when_stopped = asteroid_util.medium_angle },
         },
       },
     },
