@@ -1,0 +1,11 @@
+# Normalize text files to LF in the repository; Git still checks them out
+# using your platform's native line endings unless core.autocrlf is off.
+* text=auto eol=lf
+
+# Explicitly mark binary assets so they're never subject to line-ending
+# conversion, regardless of extension-based autodetection.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.blend binary
+*.zip binary
