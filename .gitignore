@@ -7,3 +7,7 @@ HANDOFF.md
 # Claude Code local settings
 .claude/settings.local.json
 BLENDER-SPRITE-PIPELINE.md
+# Claude-facing config and rules (kept on disk, not tracked)
+.claude/settings.json
+CLAUDE.md
+docs/runtime-discipline.md

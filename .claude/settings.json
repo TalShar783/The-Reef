@@ -1,8 +1,0 @@
-{
-  "allowedTools": [
-    "PowerShell(Get-Content)"
-  ],
-  "permissions": {
-    "allow": []
-  }
-}
